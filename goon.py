@@ -7,11 +7,13 @@ from functools import lru_cache
 from datetime import datetime, timedelta
 import time
 import logging
+import zlib
+import gzip
+from io import BytesIO
 
 app = Flask(__name__)
 
 # ============ LOGGING CONFIG ============
-# This will output to Vercel logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -21,27 +23,26 @@ EMAIL = os.environ.get('EMAIL', 'rockstarga69@gmail.com')
 PASSWORD = os.environ.get('PASSWORD', 'Jaiisbeast@1')
 
 # Cache settings
-CACHE_DURATION = 300  # 5 minutes cache
+CACHE_DURATION = 300
 
-# ============ SESSION MANAGER (Optimized for Vercel) ============
+# ============ SESSION MANAGER ============
 class FaphouseClient:
     def __init__(self):
         self.session = None
         self.logged_in = False
         self.session_created = False
-        self.last_login_attempt = None
         
     def ensure_session(self):
         """Ensure we have a valid session"""
-        # If session doesn't exist or expired, create/login
         if not self.session or not self.logged_in:
             logger.info("🔄 Creating new session...")
             self.session = requests.Session()
+            # Don't accept compressed responses by default
             self.session.headers.update({
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate, br',
+                'Accept-Encoding': 'gzip, deflate, br',  # Keep this
                 'DNT': '1',
                 'Connection': 'keep-alive',
                 'Upgrade-Insecure-Requests': '1'
@@ -53,7 +54,6 @@ class FaphouseClient:
         """Login and store session"""
         logger.info(f"🔐 Attempting login with email: {EMAIL[:5]}...")
         
-        # Set proper headers for login
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -67,12 +67,10 @@ class FaphouseClient:
         })
         
         try:
-            # First get the page to establish session
             logger.info("  📡 Getting initial page...")
             init_res = self.session.get(BASE_URL, timeout=10)
             logger.info(f"  📡 Initial page status: {init_res.status_code}")
             
-            # Login payload
             payload = {
                 "login": EMAIL,
                 "password": PASSWORD,
@@ -93,56 +91,169 @@ class FaphouseClient:
             if login_res.status_code == 200:
                 try:
                     data = login_res.json()
-                    logger.info(f"  📡 Login response data: {str(data)[:200]}...")
                     if data.get('success') or data.get('data'):
                         self.logged_in = True
                         logger.info("✅ Login successful!")
-                        self.last_login_attempt = datetime.now()
                         return True
-                except Exception as e:
-                    logger.warning(f"  ⚠️ Could not parse login response: {str(e)}")
+                except:
+                    pass
                 
-                # Check if we have session cookies
                 if len(self.session.cookies) > 0:
                     self.logged_in = True
-                    logger.info(f"✅ Login successful (session established with {len(self.session.cookies)} cookies)!")
-                    self.last_login_attempt = datetime.now()
+                    logger.info(f"✅ Login successful (session established)!")
                     return True
             
-            logger.warning(f"❌ Login failed (HTTP {login_res.status_code})")
-            if login_res.text:
-                try:
-                    error_data = login_res.json()
-                    logger.warning(f"  Error response: {str(error_data)[:200]}")
-                except:
-                    logger.warning(f"  Response text: {login_res.text[:200]}")
-            
             self.logged_in = False
             return False
             
-        except requests.exceptions.Timeout:
-            logger.error("❌ Login timeout - server not responding")
-            self.logged_in = False
-            return False
-        except requests.exceptions.ConnectionError:
-            logger.error("❌ Connection error - cannot reach server")
-            self.logged_in = False
-            return False
         except Exception as e:
             logger.error(f"❌ Login error: {str(e)}")
             self.logged_in = False
             return False
     
+    def _decode_response(self, response):
+        """Decode compressed response properly"""
+        try:
+            # Check if response is compressed
+            content_encoding = response.headers.get('Content-Encoding', '')
+            
+            if content_encoding:
+                logger.info(f"  🔓 Decoding {content_encoding} response...")
+            
+            # If it's gzip
+            if 'gzip' in content_encoding:
+                try:
+                    return gzip.decompress(response.content).decode('utf-8', errors='ignore')
+                except:
+                    pass
+            
+            # If it's deflate
+            if 'deflate' in content_encoding:
+                try:
+                    return zlib.decompress(response.content).decode('utf-8', errors='ignore')
+                except:
+                    try:
+                        return zlib.decompress(response.content, -zlib.MAX_WBITS).decode('utf-8', errors='ignore')
+                    except:
+                        pass
+            
+            # Try brotli if available
+            if 'br' in content_encoding:
+                try:
+                    import brotli
+                    return brotli.decompress(response.content).decode('utf-8', errors='ignore')
+                except ImportError:
+                    logger.warning("  ⚠️ Brotli not installed, skipping...")
+                except:
+                    pass
+            
+            # Try to decode as UTF-8
+            try:
+                return response.text
+            except:
+                pass
+            
+            # Try to detect encoding
+            try:
+                import chardet
+                detected = chardet.detect(response.content)
+                if detected and detected['encoding']:
+                    return response.content.decode(detected['encoding'], errors='ignore')
+            except ImportError:
+                pass
+            
+            # Last resort: try common encodings
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    return response.content.decode(encoding, errors='ignore')
+                except:
+                    continue
+            
+            return response.text if response.text else str(response.content)
+            
+        except Exception as e:
+            logger.error(f"  ❌ Decoding error: {str(e)}")
+            return response.text if response.text else str(response.content)
+    
     @lru_cache(maxsize=100)
     def get_m3u8_url(self, video_url):
-        """Get M3U8 URL with caching and multiple fallback attempts"""
+        """Get M3U8 URL with proper decoding"""
         logger.info(f"🔍 Processing video URL: {video_url[:80]}...")
         
-        # Clean URL
         if '#' in video_url:
             video_url = video_url.split('#')[0]
         
-        # List of user agents to try
+        # Try multiple approaches
+        approaches = [
+            self._try_with_session,
+            self._try_guest,
+            self._try_alternative_domain
+        ]
+        
+        for approach in approaches:
+            try:
+                result = approach(video_url)
+                if result:
+                    logger.info(f"✅ Found M3U8 URL with {approach.__name__}!")
+                    return result
+            except Exception as e:
+                logger.warning(f"⚠️ {approach.__name__} failed: {str(e)}")
+                continue
+        
+        logger.error("❌ Failed to find M3U8 URL with all attempts.")
+        return None
+    
+    def _try_with_session(self, video_url):
+        """Try using authenticated session"""
+        session = self.ensure_session()
+        if not session:
+            return None
+            
+        logger.info("📡 Attempt 1: Using authenticated session...")
+        
+        # Try without encoding to get raw content
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': BASE_URL,
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        }
+        
+        response = session.get(video_url, timeout=15, headers=headers)
+        logger.info(f"📡 Session GET Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            # Decode the content
+            html = self._decode_response(response)
+            if html:
+                # Check if we got readable HTML
+                if '<html' in html[:1000].lower() or '<!doctype' in html[:1000].lower():
+                    logger.info("  ✅ Got readable HTML")
+                    return self._extract_m3u8(html)
+                else:
+                    logger.warning("  ⚠️ Content doesn't look like HTML, trying to find M3U8 in raw content")
+                    # Try to find M3U8 in raw content anyway
+                    raw_text = str(response.content)
+                    m3u8 = self._extract_m3u8(raw_text)
+                    if m3u8:
+                        return m3u8
+                    
+                    # Try to find in the response text
+                    if response.text:
+                        m3u8 = self._extract_m3u8(response.text)
+                        if m3u8:
+                            return m3u8
+        
+        return None
+    
+    def _try_guest(self, video_url):
+        """Try as guest with different user agents"""
+        logger.info("🔄 Attempt 2: Trying guest fetch...")
+        
         user_agents = [
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -150,47 +261,9 @@ class FaphouseClient:
             'Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1'
         ]
         
-        # --- ATTEMPT 1: With Session/Login ---
-        session = self.ensure_session()
-        if session:
+        for i, ua in enumerate(user_agents, 1):
             try:
-                logger.info("📡 Attempt 1: Using authenticated session...")
-                response = session.get(
-                    video_url, 
-                    timeout=15, 
-                    headers={
-                        'User-Agent': user_agents[0],
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                        'Accept-Language': 'en-US,en;q=0.5',
-                        'Referer': BASE_URL,
-                        'DNT': '1',
-                        'Connection': 'keep-alive',
-                        'Upgrade-Insecure-Requests': '1'
-                    }
-                )
-                logger.info(f"📡 Session GET Status: {response.status_code}")
-                
-                if response.status_code == 200:
-                    m3u8 = self._extract_m3u8(response.text)
-                    if m3u8:
-                        logger.info("✅ Found M3U8 URL with session!")
-                        return m3u8
-                    else:
-                        logger.warning("⚠️ No M3U8 found in session response.")
-                elif response.status_code == 451:
-                    logger.warning("❌ 451: Content blocked in your region")
-                else:
-                    logger.warning(f"⚠️ Session GET failed with status: {response.status_code}")
-            except requests.exceptions.Timeout:
-                logger.error("❌ Session GET timeout")
-            except Exception as e:
-                logger.error(f"❌ Session GET Exception: {str(e)}")
-
-        # --- ATTEMPT 2: Guest/Fallback with different user agents ---
-        logger.info("🔄 Attempt 2: Trying fallback fetch without login...")
-        for i, ua in enumerate(user_agents[1:], start=1):
-            try:
-                logger.info(f"  🔄 Attempt 2.{i} with User-Agent: {ua[:30]}...")
+                logger.info(f"  🔄 Guest attempt {i} with UA: {ua[:40]}...")
                 guest_session = requests.Session()
                 guest_session.headers.update({
                     'User-Agent': ua,
@@ -203,112 +276,129 @@ class FaphouseClient:
                     'Upgrade-Insecure-Requests': '1'
                 })
                 
-                fallback_response = guest_session.get(video_url, timeout=15)
-                logger.info(f"📡 Fallback {i} Status: {fallback_response.status_code}")
+                response = guest_session.get(video_url, timeout=15)
+                logger.info(f"📡 Guest {i} Status: {response.status_code}")
                 
-                if fallback_response.status_code == 200:
-                    m3u8 = self._extract_m3u8(fallback_response.text)
-                    if m3u8:
-                        logger.info(f"✅ Found M3U8 URL with fallback {i}!")
-                        return m3u8
-                elif fallback_response.status_code == 451:
-                    logger.warning(f"❌ 451: Content blocked for UA {i}")
+                if response.status_code == 200:
+                    html = self._decode_response(response)
+                    if html:
+                        m3u8 = self._extract_m3u8(html)
+                        if m3u8:
+                            return m3u8
             except Exception as e:
-                logger.error(f"❌ Fallback {i} Exception: {str(e)}")
-
-        # --- ATTEMPT 3: Try with a different domain if available ---
+                logger.warning(f"  ⚠️ Guest {i} failed: {str(e)}")
+                continue
+        
+        return None
+    
+    def _try_alternative_domain(self, video_url):
+        """Try alternative domain"""
         try:
-            alt_base_url = "https://faphouse.com"  # Alternative domain
+            alt_base_url = "https://faphouse.com"
             alt_video_url = video_url.replace(BASE_URL, alt_base_url)
             logger.info(f"🔄 Attempt 3: Trying alternative domain: {alt_video_url[:80]}...")
             
             alt_session = requests.Session()
             alt_session.headers.update({
-                'User-Agent': user_agents[0],
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
                 'Referer': alt_base_url,
                 'DNT': '1',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
+                'Connection': 'keep-alive'
             })
             
-            alt_response = alt_session.get(alt_video_url, timeout=15)
-            logger.info(f"📡 Alternative domain status: {alt_response.status_code}")
+            response = alt_session.get(alt_video_url, timeout=15)
+            logger.info(f"📡 Alternative domain status: {response.status_code}")
             
-            if alt_response.status_code == 200:
-                m3u8 = self._extract_m3u8(alt_response.text)
-                if m3u8:
-                    logger.info("✅ Found M3U8 URL with alternative domain!")
-                    return m3u8
+            if response.status_code == 200:
+                html = self._decode_response(response)
+                if html:
+                    return self._extract_m3u8(html)
         except Exception as e:
-            logger.error(f"❌ Alternative domain Exception: {str(e)}")
-
-        logger.error("❌ Failed to find M3U8 URL with all attempts.")
+            logger.error(f"❌ Alternative domain failed: {str(e)}")
+        
         return None
-
+    
     def _extract_m3u8(self, html_content):
-        """Helper to extract M3U8 URL from HTML content"""
+        """Extract M3U8 URL from HTML content"""
         if not html_content:
             return None
-            
-        # More comprehensive patterns
+        
+        # Clean the content - remove null bytes and control characters
+        html_content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', html_content)
+        
+        # Try to find M3U8 URL in various formats
         patterns = [
-            r'https?://[^\s"\']+\.m3u8[^\s"\']*',
-            r'https?://[^\s"\']+\.m3u8(?:\?[^\s"\']*)?',
+            # Standard M3U8 URLs
+            r'https?://[^\s"\'<>]+\.m3u8[^\s"\'<>]*',
+            r'https?://[^\s"\'<>]+\.m3u8(?:\?[^\s"\'<>]*)?',
+            r'//[^\s"\'<>]+\.m3u8[^\s"\'<>]*',
+            
+            # With quotes
             r'src\s*=\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
             r'src\s*=\s*["\']([^"\']+\.m3u8(?:\?[^"\']*)?)["\']',
+            r'href\s*=\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
+            
+            # JavaScript objects
             r'file\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
             r'file\s*:\s*["\']([^"\']+\.m3u8(?:\?[^"\']*)?)["\']',
             r'url\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
             r'url\s*:\s*["\']([^"\']+\.m3u8(?:\?[^"\']*)?)["\']',
-            r'https?://[^\s<>]+\.m3u8',
-            r'//[^\s"\']+\.m3u8[^\s"\']*',
-            r'//[^\s"\']+\.m3u8(?:\?[^\s"\']*)?',
-            r'https?://[^\s"\']+/playlist\.m3u8[^\s"\']*',
-            r'https?://[^\s"\']+/hls/[^\s"\']+\.m3u8',
+            r'source\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
+            
+            # Video.js format
+            r'videojs\s*\(\s*["\'][^"\']*["\']\s*,\s*{\s*sources\s*:\s*\[\s*{\s*src\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
+            
+            # HLS.js format
+            r'Hls\s*\(\s*{\s*[^}]*src\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
+            
+            # Common player formats
+            r'player\s*\.\s*setup\s*\(\s*{\s*[^}]*file\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
+            r'jwplayer\s*\(\s*["\'][^"\']*["\']\s*\)\s*\.\s*load\s*\(\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
+            
+            # Direct HLS manifest
+            r'/hls/[^\s"\'<>]+\.m3u8[^\s"\'<>]*',
+            r'/playlist\.m3u8[^\s"\'<>]*',
+            r'/manifest\.m3u8[^\s"\'<>]*',
+            r'/master\.m3u8[^\s"\'<>]*',
         ]
         
+        found_urls = []
         for pattern in patterns:
-            matches = re.findall(pattern, html_content, re.IGNORECASE)
+            matches = re.findall(pattern, html_content, re.IGNORECASE | re.DOTALL)
             if matches:
-                m3u8_url = matches[0]
-                # Clean up
-                if isinstance(m3u8_url, tuple):
-                    m3u8_url = m3u8_url[0]
-                if '"' in m3u8_url:
-                    m3u8_url = m3u8_url.split('"')[0]
-                if "'" in m3u8_url:
-                    m3u8_url = m3u8_url.split("'")[0]
-                if '&amp;' in m3u8_url:
-                    m3u8_url = m3u8_url.replace('&amp;', '&')
-                
-                # Add protocol if missing
-                if m3u8_url.startswith('//'):
-                    m3u8_url = 'https:' + m3u8_url
-                
-                # Validate it's a proper URL
-                if m3u8_url.startswith('http') and '.m3u8' in m3u8_url:
-                    logger.info(f"✅ Found M3U8: {m3u8_url[:100]}...")
-                    return m3u8_url
+                for match in matches:
+                    if isinstance(match, tuple):
+                        match = match[0]
+                    # Clean up the URL
+                    m3u8_url = match.strip()
+                    if '"' in m3u8_url:
+                        m3u8_url = m3u8_url.split('"')[0]
+                    if "'" in m3u8_url:
+                        m3u8_url = m3u8_url.split("'")[0]
+                    if '&amp;' in m3u8_url:
+                        m3u8_url = m3u8_url.replace('&amp;', '&')
+                    
+                    # Add protocol if missing
+                    if m3u8_url.startswith('//'):
+                        m3u8_url = 'https:' + m3u8_url
+                    
+                    # Validate it's a proper URL
+                    if m3u8_url.startswith('http') and '.m3u8' in m3u8_url:
+                        found_urls.append(m3u8_url)
         
-        # If no direct URL found, try to find it in JavaScript
-        js_patterns = [
-            r'player\.setup\s*\(\s*{\s*file\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
-            r'video\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
-            r'url\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
-        ]
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_urls = []
+        for url in found_urls:
+            if url not in seen:
+                seen.add(url)
+                unique_urls.append(url)
         
-        for pattern in js_patterns:
-            matches = re.findall(pattern, html_content, re.IGNORECASE)
-            if matches:
-                m3u8_url = matches[0]
-                if isinstance(m3u8_url, tuple):
-                    m3u8_url = m3u8_url[0]
-                if m3u8_url.startswith('//'):
-                    m3u8_url = 'https:' + m3u8_url
-                logger.info(f"✅ Found M3U8 in JS: {m3u8_url[:100]}...")
-                return m3u8_url
+        if unique_urls:
+            logger.info(f"✅ Found {len(unique_urls)} M3U8 URLs")
+            return unique_urls[0]  # Return the first one
         
         return None
 
@@ -465,7 +555,6 @@ def play_video():
     if not video_url:
         return "❌ No URL provided", 400
     
-    # Clean URL
     if '#' in video_url:
         video_url = video_url.split('#')[0]
     
@@ -713,29 +802,34 @@ def debug_url():
         if '#' in video_url:
             video_url = video_url.split('#')[0]
         
-        # Try to fetch the page
         session = client.ensure_session()
         if session:
             response = session.get(video_url, timeout=15)
             debug_info["status_code"] = response.status_code
-            debug_info["content_length"] = len(response.text)
-            debug_info["content_preview"] = response.text[:500]
+            debug_info["content_length"] = len(response.content)
+            debug_info["headers"] = dict(response.headers)
+            
+            # Try to decode the content
+            html = client._decode_response(response)
+            debug_info["decoded_length"] = len(html) if html else 0
+            debug_info["is_html"] = bool(html and ('<html' in html[:1000].lower() or '<!doctype' in html[:1000].lower()))
+            debug_info["content_preview"] = html[:500] if html else str(response.content)[:500]
             
             # Try to extract M3U8
-            m3u8 = client._extract_m3u8(response.text)
+            m3u8 = client._extract_m3u8(html) if html else None
             debug_info["m3u8_found"] = bool(m3u8)
             debug_info["m3u8_url"] = m3u8
             
-            # Check for common patterns in HTML
-            html_patterns = {
-                "video-js": "video-js" in response.text,
-                "hls": "hls" in response.text.lower(),
-                "m3u8": ".m3u8" in response.text,
-                "player": "player" in response.text.lower(),
-                "src": "src=" in response.text,
-                "file": "file:" in response.text,
-            }
-            debug_info["html_patterns"] = html_patterns
+            # Check for common patterns
+            if html:
+                debug_info["patterns_found"] = {
+                    "video-js": "video-js" in html.lower(),
+                    "hls": "hls" in html.lower(),
+                    "m3u8": ".m3u8" in html.lower(),
+                    "player": "player" in html.lower(),
+                    "src": "src=" in html.lower(),
+                    "file": "file:" in html.lower(),
+                }
         else:
             debug_info["error"] = "Could not create session"
             
@@ -745,23 +839,22 @@ def debug_url():
     return jsonify(debug_info)
 
 # ============ FOR VERCEL ============
-# This is the handler that Vercel will call
 def handler(request, context):
     return app(request.environ, context)
 
-# ============ MAIN (for local testing) ============
+# ============ MAIN ============
 if __name__ == "__main__":
     print(f"""
 {'='*70}
-🎬 Faphouse Player API (Vercel Optimized)
+🎬 Faphouse Player API (Fixed Compression Issue)
 {'='*70}
 
 ✅ Features:
+  • Properly decodes gzip/deflate/brotli responses
   • Multiple fallback attempts for M3U8 extraction
   • Different user agents to bypass blocks
   • Alternative domain support
   • Comprehensive logging for debugging
-  • LRU caching for fast responses
 
 📌 Endpoints:
   📺 /play?url=VIDEO_URL     - Watch video
