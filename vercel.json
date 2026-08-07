@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "player.py",
+      "src": "goon.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "player.py"
+      "dest": "goon.py"
     }
   ]
 }
