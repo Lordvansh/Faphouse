@@ -5,8 +5,9 @@ import json
 from functools import lru_cache
 from datetime import datetime
 import os
-import base64
-from urllib.parse import urlparse, parse_qs
+import zlib
+import gzip
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -23,12 +24,10 @@ class FaphouseClient:
         self.logged_in = False
         
     def ensure_session(self):
-        """Ensure we have a valid session - properly handles Vercel's stateless nature"""
+        """Ensure we have a valid session"""
         if self.logged_in and self.session:
             try:
-                test_resp = self.session.get(f"{BASE_URL}/", timeout=5, headers={
-                    'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36'
-                })
+                test_resp = self.session.get(f"{BASE_URL}/", timeout=5)
                 if test_resp.status_code == 200:
                     return self.session
             except:
@@ -42,17 +41,19 @@ class FaphouseClient:
         print(f"🔐 Logging in...")
         self.session = requests.Session()
         
+        # Set headers to look like a real browser - DISABLE compression for debugging
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
             'Origin': BASE_URL,
             'Referer': f"{BASE_URL}/",
             'Connection': 'keep-alive',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-origin'
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Upgrade-Insecure-Requests': '1'
         })
         
         try:
@@ -73,7 +74,8 @@ class FaphouseClient:
                 json=payload,
                 headers={
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json, text/plain, */*'
                 }
             )
             
@@ -104,9 +106,33 @@ class FaphouseClient:
             print(f"❌ Login error: {str(e)}")
             return False
     
+    def decompress_response(self, content, encoding):
+        """Decompress response content based on encoding"""
+        try:
+            if encoding == 'gzip':
+                return gzip.decompress(content).decode('utf-8')
+            elif encoding == 'deflate':
+                try:
+                    return zlib.decompress(content).decode('utf-8')
+                except:
+                    return zlib.decompress(content, -zlib.MAX_WBITS).decode('utf-8')
+            elif encoding == 'br':
+                # Brotli decompression - try to use brotli library if available
+                try:
+                    import brotli
+                    return brotli.decompress(content).decode('utf-8')
+                except ImportError:
+                    print("⚠️ Brotli not installed, trying without decompression")
+                    return content.decode('utf-8', errors='ignore')
+            else:
+                return content.decode('utf-8', errors='ignore')
+        except Exception as e:
+            print(f"⚠️ Decompression error: {str(e)}")
+            return content.decode('utf-8', errors='ignore')
+    
     @lru_cache(maxsize=50)
     def get_m3u8_url(self, video_url):
-        """Get M3U8 URL with caching and multiple extraction methods"""
+        """Get M3U8 URL with proper decompression"""
         session = self.ensure_session()
         if not session:
             print("❌ No valid session available")
@@ -115,17 +141,17 @@ class FaphouseClient:
         try:
             print(f"📡 Fetching: {video_url}")
             
-            # Fetch video page with proper headers
+            # Fetch video page
             response = session.get(
                 video_url, 
                 timeout=15,
                 headers={
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
                     'Referer': video_url,
-                    'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1'
+                    'Connection': 'keep-alive'
                 }
             )
             
@@ -133,133 +159,85 @@ class FaphouseClient:
                 print(f"❌ Failed to fetch video: {response.status_code}")
                 return None
             
-            html_content = response.text
-            print(f"📄 Response length: {len(html_content)}")
+            # Decompress the content if needed
+            content_encoding = response.headers.get('Content-Encoding', '')
+            html_content = self.decompress_response(response.content, content_encoding)
             
-            # Method 1: Direct M3U8 URL pattern
-            patterns = [
-                r'https?://[^\s"\']+\.m3u8[^\s"\']*',
-                r'https?://[^\s"\']+\.m3u8\?[^\s"\']*',
-                r'https?://[^\s"\']+/hls/[^\s"\']+\.m3u8[^\s"\']*',
-                r'https?://[^\s"\']+/stream/[^\s"\']+\.m3u8[^\s"\']*',
-                r'https?://[^\s"\']+/playlist\.m3u8[^\s"\']*',
-                r'https?://[^\s"\']+/index\.m3u8[^\s"\']*'
-            ]
+            print(f"📄 Decompressed length: {len(html_content)}")
             
-            for pattern in patterns:
-                matches = re.findall(pattern, html_content, re.IGNORECASE)
-                if matches:
-                    print(f"✅ Found M3U8 URL (Method 1): {matches[0][:100]}...")
-                    return matches[0]
+            # Try to find M3U8 URL in the decompressed content
+            m3u8_urls = self.extract_m3u8_urls(html_content)
             
-            # Method 2: JavaScript variables containing M3U8
-            js_patterns = [
-                r'(?:src|url|source|file|videoUrl|hlsUrl|m3u8Url)\s*[:=]\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
-                r'(?:src|url|source|file|videoUrl|hlsUrl|m3u8Url)\s*[:=]\s*["\']([^"\']+\.m3u8\?[^"\']*)["\']',
-                r'(?:src|url|source|file|videoUrl|hlsUrl|m3u8Url)\s*[:=]\s*["\'](https?://[^"\']+\.m3u8[^"\']*)["\']',
-                r'["\'](https?://[^\s"\']+\.m3u8[^\s"\']*)["\']'
-            ]
+            if m3u8_urls:
+                print(f"✅ Found M3U8 URL: {m3u8_urls[0][:100]}...")
+                return m3u8_urls[0]
             
-            for pattern in js_patterns:
-                matches = re.findall(pattern, html_content, re.IGNORECASE)
-                if matches:
-                    print(f"✅ Found M3U8 URL (Method 2): {matches[0][:100]}...")
-                    return matches[0]
-            
-            # Method 3: Look for data attributes
-            data_patterns = [
-                r'data-(?:src|url|source|file|video)[\s]*=[\s]*["\']([^"\']+\.m3u8[^"\']*)["\']',
-                r'data-(?:src|url|source|file|video)[\s]*=[\s]*["\']([^"\']+\.m3u8\?[^"\']*)["\']'
-            ]
-            
-            for pattern in data_patterns:
-                matches = re.findall(pattern, html_content, re.IGNORECASE)
-                if matches:
-                    print(f"✅ Found M3U8 URL (Method 3): {matches[0][:100]}...")
-                    return matches[0]
-            
-            # Method 4: Search in JSON objects within the page
-            json_pattern = r'\{[^{}]*"(?:src|url|source|file|videoUrl|hlsUrl|m3u8Url)"\s*:\s*"([^"]+\.m3u8[^"]*)"[^{}]*\}'
-            json_matches = re.findall(json_pattern, html_content, re.IGNORECASE)
-            if json_matches:
-                print(f"✅ Found M3U8 URL (Method 4): {json_matches[0][:100]}...")
-                return json_matches[0]
-            
-            # Method 5: Try to find in script tags with video data
-            script_pattern = r'<script[^>]*>.*?(?:video|player|hls|stream|source).*?\.m3u8.*?</script>'
-            script_tags = re.findall(script_pattern, html_content, re.IGNORECASE | re.DOTALL)
-            for script in script_tags:
-                matches = re.findall(r'https?://[^\s"\']+\.m3u8[^\s"\']*', script, re.IGNORECASE)
-                if matches:
-                    print(f"✅ Found M3U8 URL (Method 5): {matches[0][:100]}...")
-                    return matches[0]
-            
-            # Method 6: Try to get video ID and construct URL
-            video_id_match = re.search(r'/videos/[^/]+-([A-Za-z0-9]+)', video_url)
-            if video_id_match:
-                video_id = video_id_match.group(1)
-                print(f"📝 Extracted video ID: {video_id}")
-                
-                # Try to get M3U8 from API
-                api_urls = [
-                    f"{BASE_URL}/api/video/{video_id}",
-                    f"{BASE_URL}/api/video/info/{video_id}",
-                    f"{BASE_URL}/api/stream/{video_id}",
-                    f"{BASE_URL}/api/hls/{video_id}"
-                ]
-                
-                for api_url in api_urls:
-                    try:
-                        api_resp = session.get(api_url, timeout=5, headers={
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        })
-                        if api_resp.status_code == 200:
-                            try:
-                                data = api_resp.json()
-                                # Look for M3U8 in various places in JSON
-                                json_str = json.dumps(data)
-                                m3u8_in_json = re.findall(r'https?://[^\s"\']+\.m3u8[^\s"\']*', json_str, re.IGNORECASE)
-                                if m3u8_in_json:
-                                    print(f"✅ Found M3U8 URL (Method 6 - API): {m3u8_in_json[0][:100]}...")
-                                    return m3u8_in_json[0]
-                            except:
-                                pass
-                    except:
-                        pass
-            
-            # Method 7: Check if there's a redirect to M3U8
-            if response.history:
-                for resp in response.history:
-                    if '.m3u8' in resp.url:
-                        print(f"✅ Found M3U8 URL (Method 7 - Redirect): {resp.url[:100]}...")
-                        return resp.url
-            
-            # If we got here, no M3U8 found - save a sample for debugging
             print("❌ No M3U8 URL found in page")
-            print(f"📝 Page sample (first 500 chars): {html_content[:500]}")
-            
-            # Try to find any video URL pattern
-            video_patterns = [
-                r'https?://[^\s"\']+\.(?:mp4|m3u8|ts)[^\s"\']*',
-                r'https?://[^\s"\']+/(?:video|stream|playlist)[^\s"\']*',
-            ]
-            for pattern in video_patterns:
-                matches = re.findall(pattern, html_content, re.IGNORECASE)
-                if matches:
-                    print(f"📎 Found possible video URL: {matches[0][:100]}...")
-            
             return None
             
-        except requests.exceptions.Timeout:
-            print("❌ Request timed out")
-            return None
         except Exception as e:
             print(f"❌ Error fetching M3U8: {str(e)}")
             return None
+    
+    def extract_m3u8_urls(self, html_content):
+        """Extract M3U8 URLs using multiple methods"""
+        found_urls = []
+        
+        # Method 1: Direct M3U8 URL patterns
+        patterns = [
+            r'https?://[^\s"\']+\.m3u8[^\s"\']*',
+            r'https?://[^\s"\']+\.m3u8\?[^\s"\']*',
+            r'https?://[^\s"\']+/hls/[^\s"\']+\.m3u8[^\s"\']*',
+            r'https?://[^\s"\']+/stream/[^\s"\']+\.m3u8[^\s"\']*',
+            r'https?://[^\s"\']+/playlist\.m3u8[^\s"\']*',
+            r'https?://[^\s"\']+/index\.m3u8[^\s"\']*',
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, html_content, re.IGNORECASE)
+            if matches:
+                found_urls.extend(matches)
+        
+        # Method 2: JavaScript variables
+        js_patterns = [
+            r'(?:src|url|source|file|videoUrl|hlsUrl|m3u8Url)\s*[:=]\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
+            r'(?:src|url|source|file|videoUrl|hlsUrl|m3u8Url)\s*[:=]\s*["\']([^"\']+\.m3u8\?[^"\']*)["\']',
+        ]
+        
+        for pattern in js_patterns:
+            matches = re.findall(pattern, html_content, re.IGNORECASE)
+            if matches:
+                found_urls.extend(matches)
+        
+        # Method 3: Video player config
+        config_patterns = [
+            r'player\s*=\s*new\s+\w+\([^)]*\)\s*;\s*.*?\.(?:src|setSource)\(["\']([^"\']+\.m3u8[^"\']*)["\']',
+            r'videojs\([^)]*\)\.src\(["\']([^"\']+\.m3u8[^"\']*)["\']',
+            r'player\.(?:src|setSource|source)\(["\']([^"\']+\.m3u8[^"\']*)["\']',
+        ]
+        
+        for pattern in config_patterns:
+            matches = re.findall(pattern, html_content, re.IGNORECASE | re.DOTALL)
+            if matches:
+                found_urls.extend(matches)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_urls = []
+        for url in found_urls:
+            if url not in seen:
+                seen.add(url)
+                unique_urls.append(url)
+        
+        return unique_urls
 
-# Initialize client
-client = FaphouseClient()
+# Initialize client - create a new instance for each request in Vercel
+def get_client():
+    """Get or create client instance"""
+    global client
+    if 'client' not in globals():
+        client = FaphouseClient()
+    return client
 
 # ============ FLASK APP ============
 
@@ -386,7 +364,18 @@ PLAYER_TEMPLATE = """
         }
         .url-input button:hover { background: #45a049; }
         .url-input .hint { color: #888; font-size: 12px; margin-top: 8px; }
-        .debug { color: #666; font-size: 12px; margin-top: 10px; padding: 10px; background: #111; border-radius: 4px; white-space: pre-wrap; }
+        .debug { 
+            color: #666; 
+            font-size: 12px; 
+            margin-top: 10px; 
+            padding: 10px; 
+            background: #111; 
+            border-radius: 4px; 
+            white-space: pre-wrap;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -595,6 +584,7 @@ def index():
 
 @app.route('/play')
 def play_video():
+    client = get_client()
     video_url = request.args.get('url')
     
     if not video_url:
@@ -625,17 +615,17 @@ def play_video():
                 debug_info=None
             )
         else:
-            # Get debug info by fetching the page and showing what we found
-            debug_info = "Could not extract M3U8 URL. Common reasons:\n"
-            debug_info += "1. The video may require a different login method\n"
-            debug_info += "2. The video URL might be incorrect\n"
-            debug_info += "3. The site's structure may have changed\n"
-            debug_info += "4. Try a different video URL\n\n"
-            debug_info += f"Login status: {'✅ Logged in' if client.logged_in else '❌ Not logged in'}\n"
+            debug_info = "Could not extract M3U8 URL.\n\n"
+            debug_info += f"Login status: {'✅ Logged in' if client.logged_in else '❌ Not logged in'}\n\n"
+            debug_info += "Possible reasons:\n"
+            debug_info += "1. The video may be protected or unavailable\n"
+            debug_info += "2. The URL format might be different\n"
+            debug_info += "3. The site requires additional authentication\n\n"
+            debug_info += "Try using the /api/debug endpoint to see the page content."
             
             return render_template_string(
                 PLAYER_TEMPLATE,
-                error="Could not find M3U8 URL for this video. Make sure the video is available and the URL is correct.",
+                error="Could not find M3U8 URL for this video.",
                 m3u8_url=None,
                 video_url=video_url,
                 debug_info=debug_info
@@ -651,7 +641,8 @@ def play_video():
 
 @app.route('/api/debug')
 def debug_video():
-    """Debug endpoint to show page content"""
+    """Debug endpoint to show decompressed page content"""
+    client = get_client()
     video_url = request.args.get('url')
     
     if not video_url:
@@ -664,32 +655,34 @@ def debug_video():
     try:
         response = session.get(video_url, timeout=15, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
         })
         
-        html = response.text
+        # Decompress the content
+        content_encoding = response.headers.get('Content-Encoding', '')
+        html_content = client.decompress_response(response.content, content_encoding)
         
-        # Find all potential video URLs
-        patterns = [
-            r'https?://[^\s"\']+\.m3u8[^\s"\']*',
-            r'https?://[^\s"\']+\.mp4[^\s"\']*',
-            r'https?://[^\s"\']+/hls/[^\s"\']+',
-            r'https?://[^\s"\']+/stream/[^\s"\']+',
-        ]
+        # Extract M3U8 URLs
+        m3u8_urls = client.extract_m3u8_urls(html_content)
         
-        found_urls = []
-        for pattern in patterns:
-            matches = re.findall(pattern, html, re.IGNORECASE)
-            if matches:
-                found_urls.extend(matches[:5])  # First 5 matches
+        # Find all script tags that might contain video data
+        script_tags = re.findall(r'<script[^>]*>([^<]+)</script>', html_content, re.IGNORECASE | re.DOTALL)
+        video_scripts = []
+        for script in script_tags[:10]:  # First 10 scripts
+            if 'video' in script.lower() or 'player' in script.lower() or 'hls' in script.lower():
+                video_scripts.append(script[:500])
         
         return jsonify({
             "success": True,
             "status_code": response.status_code,
-            "content_length": len(html),
-            "found_urls": found_urls,
-            "page_sample": html[:1000],
-            "logged_in": client.logged_in
+            "content_encoding": content_encoding,
+            "decompressed_length": len(html_content),
+            "m3u8_urls": m3u8_urls[:10],
+            "page_sample": html_content[:2000],
+            "video_scripts": video_scripts[:5],
+            "logged_in": client.logged_in,
+            "cookies": list(session.cookies.keys())
         })
     except Exception as e:
         return jsonify({
@@ -699,6 +692,7 @@ def debug_video():
 
 @app.route('/api/m3u8')
 def get_m3u8():
+    client = get_client()
     video_url = request.args.get('url')
     
     if not video_url:
@@ -732,6 +726,7 @@ def get_m3u8():
 
 @app.route('/api/status')
 def status():
+    client = get_client()
     return jsonify({
         "status": "online",
         "logged_in": client.logged_in,
@@ -739,6 +734,9 @@ def status():
     })
 
 # ============ FOR VERCEL ============
+# Create a client instance for the app
+client = FaphouseClient()
+
 if __name__ == "__main__":
     print("🎬 Faphouse Player running locally")
     client.login()
