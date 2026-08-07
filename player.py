@@ -21,17 +21,46 @@ class FaphouseClient:
         self.logged_in = False
         
     def ensure_session(self):
-        """Ensure we have a valid session"""
-        if not self.logged_in or not self.session:
-            self.login()
+        """Ensure we have a valid session - properly handles Vercel's stateless nature"""
+        # If session exists and we're logged in, test it
+        if self.logged_in and self.session:
+            try:
+                # Quick test to verify session is still valid
+                test_resp = self.session.get(f"{BASE_URL}/", timeout=5, headers={
+                    'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36'
+                })
+                if test_resp.status_code == 200:
+                    return self.session
+            except:
+                pass
+        
+        # If we get here, login fresh
+        self.login()
         return self.session
     
     def login(self):
         """Login and store session"""
-        print(f"\n🔐 Logging in...")
+        print(f"🔐 Logging in...")
         self.session = requests.Session()
         
+        # Set headers to look like a real browser
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Origin': BASE_URL,
+            'Referer': f"{BASE_URL}/",
+            'Connection': 'keep-alive',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin'
+        })
+        
         try:
+            # First, get the main page to get cookies
+            init_res = self.session.get(BASE_URL, timeout=10)
+            
             # Login payload
             payload = {
                 "login": EMAIL,
@@ -44,14 +73,34 @@ class FaphouseClient:
             login_res = self.session.post(
                 f"{BASE_URL}/api/auth/signin",
                 json=payload,
-                headers={'Content-Type': 'application/json'}
+                headers={
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             )
             
-            if login_res.status_code == 200 and "_identity" in self.session.cookies:
-                self.logged_in = True
-                self.last_login = datetime.now()
-                print(f"✅ Login successful!")
-                return True
+            # Check if login was successful
+            if login_res.status_code == 200:
+                # Check if we got session cookies
+                if "_identity" in self.session.cookies:
+                    self.logged_in = True
+                    self.last_login = datetime.now()
+                    print(f"✅ Login successful!")
+                    return True
+                else:
+                    # Sometimes the identity is in the response body
+                    try:
+                        resp_data = login_res.json()
+                        if resp_data.get('success') or resp_data.get('status') == 'success':
+                            self.logged_in = True
+                            self.last_login = datetime.now()
+                            print(f"✅ Login successful (from response)!")
+                            return True
+                    except:
+                        pass
+                    
+                    print(f"❌ Login failed: No session cookie")
+                    return False
             else:
                 print(f"❌ Login failed: {login_res.status_code}")
                 return False
@@ -60,32 +109,64 @@ class FaphouseClient:
             print(f"❌ Login error: {str(e)}")
             return False
     
-    @lru_cache(maxsize=100)
+    @lru_cache(maxsize=50)
     def get_m3u8_url(self, video_url):
         """Get M3U8 URL with caching"""
         session = self.ensure_session()
         if not session:
+            print("❌ No valid session available")
             return None
             
         try:
-            # Fetch video page with timeout
-            response = session.get(video_url, timeout=10, headers={
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36',
-                'Accept': 'text/html,application/xhtml+xml'
-            })
+            print(f"📡 Fetching: {video_url}")
+            
+            # Fetch video page with proper headers
+            response = session.get(
+                video_url, 
+                timeout=15,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Referer': BASE_URL,
+                    'Connection': 'keep-alive'
+                }
+            )
             
             if response.status_code != 200:
+                print(f"❌ Failed to fetch video: {response.status_code}")
                 return None
             
-            # Find M3U8 URL using regex
-            pattern = r'https?://[^\s"\']+\.m3u8[^\s"\']*'
-            matches = re.findall(pattern, response.text)
+            # Debug: Save response to check
+            print(f"📄 Response length: {len(response.text)}")
             
-            if matches:
-                return matches[0]
+            # Try multiple patterns to find M3U8 URL
+            patterns = [
+                r'https?://[^\s"\']+\.m3u8[^\s"\']*',
+                r'https?://[^\s"\']+\.m3u8\?[^\s"\']*',
+                r'https?://[^\s"\']+/hls/[^\s"\']+\.m3u8[^\s"\']*',
+                r'https?://[^\s"\']+/stream/[^\s"\']+\.m3u8[^\s"\']*'
+            ]
             
+            for pattern in patterns:
+                matches = re.findall(pattern, response.text)
+                if matches:
+                    print(f"✅ Found M3U8 URL: {matches[0][:100]}...")
+                    return matches[0]
+            
+            # Also try to find it in JavaScript objects
+            js_pattern = r'(?:src|url|source|file)\s*[:=]\s*["\']([^"\']+\.m3u8[^"\']*)["\']'
+            js_matches = re.findall(js_pattern, response.text, re.IGNORECASE)
+            if js_matches:
+                print(f"✅ Found M3U8 in JS: {js_matches[0][:100]}...")
+                return js_matches[0]
+            
+            print("❌ No M3U8 URL found in page")
             return None
             
+        except requests.exceptions.Timeout:
+            print("❌ Request timed out")
+            return None
         except Exception as e:
             print(f"❌ Error fetching M3U8: {str(e)}")
             return None
@@ -95,7 +176,7 @@ client = FaphouseClient()
 
 # ============ FLASK APP ============
 
-# HTML Player Template with better loading
+# HTML Player Template
 PLAYER_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -132,10 +213,7 @@ PLAYER_TEMPLATE = """
             position: relative;
             aspect-ratio: 16/9;
         }
-        #player {
-            width: 100%;
-            height: 100%;
-        }
+        #player { width: 100%; height: 100%; }
         .info {
             margin-top: 15px;
             padding: 15px;
@@ -187,10 +265,7 @@ PLAYER_TEMPLATE = """
             50% { opacity: 0.3; }
             100% { opacity: 1; }
         }
-        .video-title {
-            color: #888;
-            font-size: 14px;
-        }
+        .video-title { color: #888; font-size: 14px; }
         .url-input {
             margin: 20px 0;
             padding: 20px;
@@ -222,23 +297,15 @@ PLAYER_TEMPLATE = """
             transition: background 0.3s;
             margin-left: 10px;
         }
-        .url-input button:hover {
-            background: #45a049;
-        }
-        .url-input .hint {
-            color: #888;
-            font-size: 12px;
-            margin-top: 8px;
-        }
+        .url-input button:hover { background: #45a049; }
+        .url-input .hint { color: #888; font-size: 12px; margin-top: 8px; }
+        .debug { color: #666; font-size: 12px; margin-top: 10px; padding: 10px; background: #111; border-radius: 4px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="status-bar">
-            <h2>
-                🎬 Faphouse
-                <span class="badge">ULTRA</span>
-            </h2>
+            <h2>🎬 Faphouse <span class="badge">ULTRA</span></h2>
             <span class="status-dot"></span>
             <span class="video-title">Live Stream</span>
         </div>
@@ -247,6 +314,9 @@ PLAYER_TEMPLATE = """
             <div class="error">
                 <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
                 {{ error }}
+                {% if debug_info %}
+                <div class="debug">🔍 Debug: {{ debug_info }}</div>
+                {% endif %}
             </div>
             <div class="url-input">
                 <form method="GET" action="/play">
@@ -291,15 +361,9 @@ PLAYER_TEMPLATE = """
                     },
                     controlBar: {
                         children: [
-                            'playToggle',
-                            'volumePanel',
-                            'currentTimeDisplay',
-                            'timeDivider',
-                            'durationDisplay',
-                            'progressControl',
-                            'liveDisplay',
-                            'qualitySelector',
-                            'fullscreenToggle'
+                            'playToggle', 'volumePanel', 'currentTimeDisplay',
+                            'timeDivider', 'durationDisplay', 'progressControl',
+                            'liveDisplay', 'qualitySelector', 'fullscreenToggle'
                         ]
                     }
                 });
@@ -353,9 +417,7 @@ def index():
                 }
                 h1 { font-size: 32px; margin-bottom: 10px; }
                 .subtitle { color: #888; margin-bottom: 30px; }
-                .url-input {
-                    margin: 20px 0;
-                }
+                .url-input { margin: 20px 0; }
                 .url-input input {
                     width: 100%;
                     padding: 15px;
@@ -382,9 +444,7 @@ def index():
                     cursor: pointer;
                     transition: background 0.3s;
                 }
-                .url-input button:hover {
-                    background: #45a049;
-                }
+                .url-input button:hover { background: #45a049; }
                 .hint {
                     color: #666;
                     font-size: 13px;
@@ -460,7 +520,13 @@ def play_video():
             </div>
         """)
     
+    # Clean the URL if needed
+    video_url = video_url.strip()
+    if not video_url.startswith('http'):
+        video_url = f"https://{video_url}"
+    
     try:
+        print(f"🎯 Processing URL: {video_url}")
         m3u8_url = client.get_m3u8_url(video_url)
         
         if m3u8_url:
@@ -468,21 +534,24 @@ def play_video():
                 PLAYER_TEMPLATE,
                 error=None,
                 m3u8_url=m3u8_url,
-                video_url=video_url
+                video_url=video_url,
+                debug_info=None
             )
         else:
             return render_template_string(
                 PLAYER_TEMPLATE,
-                error="Could not find M3U8 URL for this video. Make sure the video is available.",
+                error="Could not find M3U8 URL for this video. Make sure the video is available and the URL is correct.",
                 m3u8_url=None,
-                video_url=video_url
+                video_url=video_url,
+                debug_info="Login status: " + ("✅ Logged in" if client.logged_in else "❌ Not logged in")
             )
     except Exception as e:
         return render_template_string(
             PLAYER_TEMPLATE,
             error=f"Error: {str(e)}",
             m3u8_url=None,
-            video_url=video_url
+            video_url=video_url,
+            debug_info=f"Exception: {type(e).__name__}"
         )
 
 @app.route('/api/m3u8')
@@ -503,12 +572,14 @@ def get_m3u8():
                 "success": True,
                 "m3u8_url": m3u8_url,
                 "video_url": video_url,
-                "cached": client.get_m3u8_url.cache_info().hits > 0
+                "cached": client.get_m3u8_url.cache_info().hits > 0,
+                "logged_in": client.logged_in
             })
         else:
             return jsonify({
                 "success": False,
-                "error": "No M3U8 URL found"
+                "error": "No M3U8 URL found",
+                "logged_in": client.logged_in
             }), 404
     except Exception as e:
         return jsonify({
@@ -525,24 +596,7 @@ def status():
     })
 
 # ============ FOR VERCEL ============
-# This is the handler that Vercel will use
-# Note: Removed the if __name__ == "__main__" block
-
-# For local development, you can still run it with:
-# python player.py
 if __name__ == "__main__":
-    print(f"""
-{'='*70}
-🎬 Faphouse M3U8 Player API (Optimized for Vercel)
-{'='*70}
-
-🚀 Deployed on Vercel!
-📌 Endpoints:
-  📺 /play?url=VIDEO_URL     - Watch video in browser
-  📡 /api/m3u8?url=VIDEO_URL - Get M3U8 URL as JSON
-  📊 /api/status             - API status
-{'='*70}
-""")
-    # Login once on startup for local development
+    print("🎬 Faphouse Player running locally")
     client.login()
     app.run(host='0.0.0.0', port=5000, debug=False)
