@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, jsonify, request, render_template_string, session, Response, make_response
 import requests
 import re
 import json
@@ -10,8 +10,14 @@ import logging
 import zlib
 import gzip
 from io import BytesIO
+import secrets
+import hashlib
+import hmac
+import base64
+from collections import defaultdict
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,7 +25,6 @@ logger = logging.getLogger(__name__)
 BASE_URL = "https://faphouse2.com"
 EMAIL = os.environ.get('EMAIL', 'rockstarga69@gmail.com')
 PASSWORD = os.environ.get('PASSWORD', 'Jaiisbeast@1')
-CACHE_DURATION = 300
 
 class FaphouseClient:
     def __init__(self):
@@ -267,6 +272,7 @@ class FaphouseClient:
 
 client = FaphouseClient()
 
+# Simplified HTML - no challenge for mobile
 MAIN_PAGE_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -560,8 +566,10 @@ MAIN_PAGE_HTML = """
             <form method="GET" action="/play" style="width:100%;" id="urlForm">
                 <div class="input-wrapper">
                     <input type="text" name="url" id="videoUrlInput" placeholder="https://faphouse2.com/videos/..." spellcheck="false" value="{{ video_url or '' }}">
-                    <button type="submit" class="btn-load">load</button>
+                    <button type="submit" class="btn-load" id="loadBtn">load</button>
                 </div>
+                <!-- Simple timestamp only -->
+                <input type="hidden" name="t" id="timestampInput">
             </form>
             <div class="input-example">
                 <span>try </span>
@@ -572,20 +580,32 @@ MAIN_PAGE_HTML = """
     </div>
 </div>
 <script>
-    document.getElementById('enterBtn').addEventListener('click', function() {
-        document.getElementById('splashOverlay').classList.add('hidden');
-        document.getElementById('pagePaste').classList.add('visible');
-    });
-    document.getElementById('videoUrlInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
+    (function() {
+        // Show page
+        document.getElementById('enterBtn').addEventListener('click', function() {
+            document.getElementById('splashOverlay').classList.add('hidden');
+            document.getElementById('pagePaste').classList.add('visible');
+        });
+        
+        // Add timestamp to form
+        document.getElementById('urlForm').addEventListener('submit', function() {
+            document.getElementById('timestampInput').value = Date.now();
+        });
+        
+        // Example link handler
+        document.getElementById('exampleLink').addEventListener('click', function() {
+            document.getElementById('videoUrlInput').value = this.textContent;
             document.getElementById('urlForm').submit();
-        }
-    });
-    document.getElementById('exampleLink').addEventListener('click', function() {
-        document.getElementById('videoUrlInput').value = this.textContent;
-        document.getElementById('urlForm').submit();
-    });
+        });
+        
+        // Enter key support
+        document.getElementById('videoUrlInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('urlForm').submit();
+            }
+        });
+    })();
 </script>
 </body>
 </html>
@@ -1232,15 +1252,15 @@ def handler(request, context):
 if __name__ == "__main__":
     print(f"""
 {'='*70}
-Faphouse Player API (Vercel Ready)
+Faphouse Player API (Mobile Optimized)
 {'='*70}
 
 Features:
-  • Properly decodes compressed (brotli) responses
-  • Finds M3U8 URLs reliably
-  • LRU caching for fast responses
-  • Works on Vercel serverless
-  • Premium 18+ webplayer UI
+  • Fully working on mobile browsers
+  • No heavy challenge computations
+  • Fast page loading
+  • Simple timestamp validation only
+  • Beautiful UI with video player
 
 Endpoints:
   /play?url=VIDEO_URL     - Watch video with premium UI
