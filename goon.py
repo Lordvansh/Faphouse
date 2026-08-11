@@ -10,6 +10,7 @@ import logging
 import zlib
 import gzip
 from io import BytesIO
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -265,7 +266,132 @@ class FaphouseClient:
         
         return None
 
-client = FaphouseClient()
+class TeraboxDownloader:
+    def __init__(self):
+        self.session = requests.Session()
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Upgrade-Insecure-Requests': '1',
+            'Connection': 'keep-alive',
+        }
+        self.base_url = "https://terabox.beer"
+        self.cache = {}
+
+    def extract_video_id(self, url):
+        patterns = [
+            r'/s/([a-zA-Z0-9_-]+)',
+            r'share\.com/s/([a-zA-Z0-9_-]+)',
+            r'file\.com/s/([a-zA-Z0-9_-]+)',
+            r'terafileshare\.com/s/([a-zA-Z0-9_-]+)',
+            r'terabox\.com/s/([a-zA-Z0-9_-]+)',
+            r'1024terabox\.com/s/([a-zA-Z0-9_-]+)',
+            r'teraboxapp\.com/s/([a-zA-Z0-9_-]+)',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                return match.group(1)
+        return None
+
+    def get_proxy_url(self, terabox_url):
+        video_id = self.extract_video_id(terabox_url)
+        if not video_id:
+            return {"error": "Invalid or unsupported Terabox link. Please make sure you're using a valid Terabox share link."}
+
+        cache_key = f"proxy_{terabox_url}"
+        if cache_key in self.cache:
+            cached = self.cache[cache_key]
+            if (datetime.now() - cached['timestamp']).seconds < CACHE_DURATION:
+                logger.info("Returning cached proxy URL")
+                return cached['data']
+
+        try:
+            encoded_url = urllib.parse.quote(terabox_url, safe='')
+            api_url = f"{self.base_url}/api/terabox-new?link={encoded_url}"
+            
+            response = self.session.get(api_url, headers=self.headers, timeout=30)
+            
+            if response.status_code == 200:
+                api_result = response.json()
+                
+                if isinstance(api_result, dict):
+                    if api_result.get('error') and api_result.get('error') != False:
+                        error_msg = api_result.get('error')
+                        if isinstance(error_msg, str):
+                            if "105" in error_msg:
+                                return {"error": "The Terabox link is invalid or the video no longer exists. Please check the link and try again."}
+                            elif "404" in error_msg:
+                                return {"error": "Video not found. The link might be expired or removed."}
+                            else:
+                                return {"error": f"Terabox service error: {error_msg}. Please try again later."}
+                        else:
+                            return {"error": "Terabox service returned an error. Please try again later."}
+                    
+                    proxy_url = None
+                    for field in ['proxy_url', 'download_link', 'fallback_url', 'stream_download_url']:
+                        if field in api_result and api_result[field]:
+                            proxy_url = api_result[field]
+                            break
+                    
+                    if not proxy_url:
+                        for key, value in api_result.items():
+                            if isinstance(value, str) and value.startswith('http'):
+                                if '.workers.dev' in value or 'proxy' in key.lower():
+                                    proxy_url = value
+                                    break
+                    
+                    if proxy_url:
+                        result = {
+                            "success": True,
+                            "proxy_url": proxy_url,
+                            "file_name": api_result.get('file_name', 'Unknown'),
+                            "file_size": api_result.get('file_size', 'Unknown')
+                        }
+                        self.cache[cache_key] = {
+                            'timestamp': datetime.now(),
+                            'data': result
+                        }
+                        return result
+                    else:
+                        return {"error": "No video URL could be extracted from this Terabox link. The link might be private or unsupported."}
+                else:
+                    return {"error": "Invalid response from Terabox service. Please try again later."}
+            elif response.status_code == 404:
+                return {"error": "Terabox link not found. Please check if the link is correct."}
+            elif response.status_code == 403:
+                return {"error": "Access denied. The Terabox link might be private or restricted."}
+            else:
+                return {"error": f"Terabox service is currently unavailable (Status: {response.status_code}). Please try again later."}
+                
+        except requests.exceptions.Timeout:
+            return {"error": "Connection to Terabox service timed out. Please try again."}
+        except requests.exceptions.ConnectionError:
+            return {"error": "Could not connect to Terabox service. Please check your internet connection."}
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            return {"error": "An unexpected error occurred while processing the Terabox link. Please try again."}
+
+    def process_terabox_link(self, terabox_url):
+        result = self.get_proxy_url(terabox_url)
+        if result.get('error'):
+            return result
+        
+        proxy_url = result['proxy_url']
+        logger.info(f"Proxy URL: {proxy_url[:100]}...")
+        
+        return {
+            "success": True,
+            "video_url": proxy_url,
+            "file_name": result.get('file_name', 'Unknown'),
+            "file_size": result.get('file_size', 'Unknown'),
+            "platform": "terabox"
+        }
+
+faphouse_client = FaphouseClient()
+terabox_client = TeraboxDownloader()
 
 MAIN_PAGE_HTML = """
 <!DOCTYPE html>
@@ -273,7 +399,7 @@ MAIN_PAGE_HTML = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Faphouse</title>
+    <title>Faphouse · Terabox Player</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -379,6 +505,10 @@ MAIN_PAGE_HTML = """
             inset: 0;
             background: radial-gradient(ellipse at 50% 40%, rgba(245,197,24,0.02), transparent 70%);
             pointer-events: none;
+            transition: background 0.6s ease;
+        }
+        .bg-glow.terabox-glow {
+            background: radial-gradient(ellipse at 50% 40%, rgba(0,180,216,0.02), transparent 70%);
         }
         .bg-grid {
             position: absolute;
@@ -388,43 +518,119 @@ MAIN_PAGE_HTML = """
                 linear-gradient(90deg, rgba(255,215,0,0.008) 1px, transparent 1px);
             background-size: 60px 60px;
             pointer-events: none;
+            transition: background-image 0.6s ease;
+        }
+        .bg-grid.terabox-grid {
+            background-image: 
+                linear-gradient(rgba(0,180,216,0.008) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,180,216,0.008) 1px, transparent 1px);
         }
         .brand-container {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2.5rem;
             position: relative;
+            min-height: 120px;
         }
-        .brand-pulse {
+        .logo-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 80px;
+        }
+        .logo-faphouse {
             display: flex;
             align-items: baseline;
             gap: 0.1rem;
             font-family: "Unbounded", sans-serif;
-            font-size: 6rem;
+            font-size: 5rem;
             font-weight: 900;
             line-height: 1;
             letter-spacing: -0.02em;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.8) rotate(-3deg);
+            pointer-events: none;
+        }
+        .logo-faphouse.active {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            pointer-events: auto;
             position: relative;
         }
-        .brand-pulse .fap {
+        .logo-faphouse.hidden {
+            opacity: 0;
+            transform: scale(0.8) rotate(3deg);
+            pointer-events: none;
+            position: absolute;
+        }
+        .logo-faphouse .fap {
             background: linear-gradient(135deg, #f5c518, #d4a800);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: pulseBlurSmooth 4s ease-in-out infinite;
-            position: relative;
             display: inline-block;
+            animation: fapPulse 3s ease-in-out infinite;
         }
-        @keyframes pulseBlurSmooth {
+        @keyframes fapPulse {
             0%, 100% { filter: blur(0px); text-shadow: 0 0 40px rgba(245,197,24,0.03); transform: scale(1); }
-            30% { filter: blur(5px); text-shadow: 0 0 60px rgba(245,197,24,0.08); transform: scale(1.015); }
+            30% { filter: blur(5px); text-shadow: 0 0 60px rgba(245,197,24,0.08); transform: scale(1.02); }
             50% { filter: blur(0px); text-shadow: 0 0 40px rgba(245,197,24,0.03); transform: scale(1); }
-            80% { filter: blur(5px); text-shadow: 0 0 60px rgba(245,197,24,0.08); transform: scale(1.015); }
+            80% { filter: blur(5px); text-shadow: 0 0 60px rgba(245,197,24,0.08); transform: scale(1.02); }
         }
-        .brand-pulse .house {
+        .logo-faphouse .house {
             color: #f5f0e6;
             -webkit-text-fill-color: #f5f0e6;
-            position: relative;
             display: inline-block;
+        }
+        .logo-terabox {
+            display: flex;
+            align-items: baseline;
+            gap: 0.1rem;
+            font-family: "Unbounded", sans-serif;
+            font-size: 4.2rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.8) rotate(3deg);
+            pointer-events: none;
+        }
+        .logo-terabox.active {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            pointer-events: auto;
+            position: relative;
+        }
+        .logo-terabox.hidden {
+            opacity: 0;
+            transform: scale(0.8) rotate(-3deg);
+            pointer-events: none;
+            position: absolute;
+        }
+        .logo-terabox .tera {
+            background: linear-gradient(135deg, #00b4d8, #0077b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+        }
+        .logo-terabox .box-text {
+            color: #f5f0e6;
+            -webkit-text-fill-color: #f5f0e6;
+            display: inline-block;
+            animation: teraPulse 3.2s ease-in-out infinite;
+        }
+        @keyframes teraPulse {
+            0%, 100% { filter: blur(0px); text-shadow: 0 0 40px rgba(0,180,216,0.03); transform: scale(1); }
+            25% { filter: blur(4px); text-shadow: 0 0 60px rgba(0,180,216,0.08); transform: scale(0.9) rotate(-2deg); }
+            45% { filter: blur(0px); text-shadow: 0 0 40px rgba(0,180,216,0.03); transform: scale(1.05) rotate(1deg); }
+            65% { filter: blur(4px); text-shadow: 0 0 60px rgba(0,180,216,0.08); transform: scale(0.85) rotate(2deg); }
+            85% { filter: blur(0px); text-shadow: 0 0 40px rgba(0,180,216,0.03); transform: scale(1) rotate(0deg); }
         }
         .badge-18 {
             font-family: "JetBrains Mono", monospace;
@@ -440,6 +646,13 @@ MAIN_PAGE_HTML = """
             vertical-align: middle;
             -webkit-text-fill-color: #f5c518;
             letter-spacing: 0.05em;
+            transition: all 0.6s ease;
+        }
+        .badge-18.terabox-badge {
+            color: #00b4d8;
+            border-color: rgba(0,180,216,0.06);
+            -webkit-text-fill-color: #00b4d8;
+            background: rgba(0,180,216,0.04);
         }
         .brand-tagline {
             font-family: "JetBrains Mono", monospace;
@@ -448,10 +661,64 @@ MAIN_PAGE_HTML = """
             letter-spacing: 0.3em;
             text-transform: uppercase;
             margin-top: 0.8rem;
+            transition: color 0.6s ease;
+        }
+        .brand-tagline.terabox-tagline { color: #1a3a4a; }
+        .platform-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+            justify-content: center;
+            background: rgba(255,255,255,0.01);
+            padding: 0.3rem;
+            border-radius: 60px;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+        .platform-selector .pill {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 1.8rem;
+            border-radius: 60px;
+            font-family: "Unbounded", sans-serif;
+            font-size: 0.6rem;
+            color: #3d3930;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            position: relative;
+        }
+        .platform-selector .pill:hover { color: #8a8477; }
+        .platform-selector .pill.active-faphouse {
+            color: #f5c518;
+            background: rgba(245,197,24,0.06);
+        }
+        .platform-selector .pill.active-terabox {
+            color: #00b4d8;
+            background: rgba(0,180,216,0.06);
+        }
+        .platform-selector .pill::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 60%;
+            height: 2px;
+            border-radius: 2px;
+            transition: transform 0.4s ease;
+        }
+        .platform-selector .pill.active-faphouse::after {
+            background: #f5c518;
+            transform: translateX(-50%) scaleX(1);
+        }
+        .platform-selector .pill.active-terabox::after {
+            background: #00b4d8;
+            transform: translateX(-50%) scaleX(1);
         }
         .input-area {
             width: 100%;
-            max-width: 640px;
+            max-width: 720px;
             position: relative;
         }
         .input-wrapper {
@@ -463,9 +730,11 @@ MAIN_PAGE_HTML = """
             border-radius: 80px;
             padding: 0.2rem 0.2rem 0.2rem 2rem;
             border: 1px solid rgba(255,215,0,0.03);
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
         }
         .input-wrapper:focus-within { border-color: rgba(255,215,0,0.06); }
+        .input-wrapper.terabox-mode { border-color: rgba(0,180,216,0.03); }
+        .input-wrapper.terabox-mode:focus-within { border-color: rgba(0,180,216,0.06); }
         .input-wrapper input {
             flex: 1;
             background: transparent;
@@ -476,6 +745,7 @@ MAIN_PAGE_HTML = """
             color: #ece4d6;
             outline: none;
             font-weight: 300;
+            min-width: 0;
         }
         .input-wrapper input::placeholder { color: #3a362e; font-weight: 200; }
         .input-wrapper .btn-load {
@@ -488,11 +758,19 @@ MAIN_PAGE_HTML = """
             font-size: 0.65rem;
             color: #000000;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             letter-spacing: 0.05em;
             text-transform: uppercase;
+            white-space: nowrap;
         }
-        .input-wrapper .btn-load:hover { background: #ffd93d; transform: scale(0.96); }
+        .input-wrapper .btn-load:hover { transform: scale(0.96); }
+        .input-wrapper .btn-load:active { transform: scale(0.92); }
+        .input-wrapper .btn-load.terabox-mode {
+            background: #00b4d8;
+        }
+        .input-wrapper .btn-load.terabox-mode:hover {
+            background: #48cae4;
+        }
         .input-example {
             margin-top: 1rem;
             text-align: center;
@@ -503,10 +781,17 @@ MAIN_PAGE_HTML = """
         .input-example .example-link {
             color: #6b6558;
             cursor: pointer;
-            transition: color 0.2s ease;
+            transition: color 0.3s ease;
             border-bottom: 1px solid rgba(255,215,0,0.02);
         }
         .input-example .example-link:hover { color: #c4bbaa; }
+        .input-example .example-link.terabox-example {
+            color: #0077b6;
+        }
+        .input-example .example-link.terabox-example:hover {
+            color: #00b4d8;
+        }
+        .input-example .sep-dot { color: #1a1814; padding: 0 0.5rem; }
         .paste-footer {
             position: absolute;
             bottom: 2rem;
@@ -519,9 +804,13 @@ MAIN_PAGE_HTML = """
             color: #1a1814;
             letter-spacing: 0.3em;
             text-transform: uppercase;
+            transition: color 0.6s ease;
         }
+        .paste-footer.terabox-footer { color: #0a2a3a; }
         @media (max-width: 900px) {
-            .brand-pulse { font-size: 4rem; }
+            .logo-faphouse { font-size: 3.5rem; }
+            .logo-terabox { font-size: 3rem; }
+            .platform-selector .pill { padding: 0.4rem 1.2rem; font-size: 0.5rem; }
             .input-wrapper { flex-wrap: wrap; background: transparent; padding: 0; border: none; backdrop-filter: none; }
             .input-wrapper input { padding: 0.8rem 1.2rem; background: rgba(8,8,8,0.9); border-radius: 60px; border: 1px solid rgba(255,215,0,0.03); width: 100%; margin-bottom: 0.5rem; }
             .input-wrapper .btn-load { width: 100%; justify-content: center; }
@@ -529,10 +818,13 @@ MAIN_PAGE_HTML = """
             .badge-18 { font-size: 0.45rem; padding: 0.02rem 0.4rem; }
         }
         @media (max-width: 500px) {
-            .brand-pulse { font-size: 2.8rem; }
+            .logo-faphouse { font-size: 2.4rem; }
+            .logo-terabox { font-size: 2.2rem; }
             .splash-18 { font-size: 3.5rem; }
             .splash-18 span { font-size: 1.5rem; }
             .badge-18 { font-size: 0.4rem; padding: 0.02rem 0.3rem; }
+            .platform-selector { gap: 0.3rem; padding: 0.2rem; }
+            .platform-selector .pill { padding: 0.3rem 0.8rem; font-size: 0.4rem; }
         }
     </style>
 </head>
@@ -546,29 +838,42 @@ MAIN_PAGE_HTML = """
         </div>
     </div>
     <div class="page-paste" id="pagePaste">
-        <div class="bg-glow"></div>
-        <div class="bg-grid"></div>
+        <div class="bg-glow" id="bgGlow"></div>
+        <div class="bg-grid" id="bgGrid"></div>
         <div class="brand-container">
-            <div class="brand-pulse">
-                <span class="fap">FAP</span>
-                <span class="house">HOUSE</span>
-                <span class="badge-18">18+</span>
+            <div class="logo-wrapper" id="logoWrapper">
+                <div class="logo-faphouse active" id="logoFaphouse">
+                    <span class="fap">FAP</span>
+                    <span class="house">HOUSE</span>
+                    <span class="badge-18" id="badgeFaphouse">18+</span>
+                </div>
+                <div class="logo-terabox hidden" id="logoTerabox">
+                    <span class="tera">TERA</span>
+                    <span class="box-text">BOX</span>
+                    <span class="badge-18 terabox-badge" id="badgeTerabox">18+</span>
+                </div>
             </div>
-            <div class="brand-tagline">player · zero latency</div>
+            <div class="brand-tagline" id="brandTagline">player · zero latency · dual platform</div>
         </div>
         <div class="input-area">
+            <div class="platform-selector" id="platformSelector">
+                <button class="pill active-faphouse" data-platform="faphouse" id="faphousePill">Faphouse</button>
+                <button class="pill" data-platform="terabox" id="teraboxPill">Terabox</button>
+            </div>
             <form method="GET" action="/play" style="width:100%;" id="urlForm">
-                <div class="input-wrapper">
+                <div class="input-wrapper" id="inputWrapper">
                     <input type="text" name="url" id="videoUrlInput" placeholder="https://faphouse2.com/videos/..." spellcheck="false" value="{{ video_url or '' }}">
-                    <button type="submit" class="btn-load">load</button>
+                    <button type="submit" class="btn-load" id="loadBtn">load</button>
                 </div>
             </form>
             <div class="input-example">
                 <span>try </span>
-                <span class="example-link" id="exampleLink">https://faphouse2.com/videos/shared-bed-stepsister-fuck-C6Qi1u</span>
+                <span class="example-link" id="exampleFaphouse">https://faphouse2.com/videos/shared-bed-stepsister-fuck-C6Qi1u</span>
+                <span class="sep-dot">·</span>
+                <span class="example-link terabox-example" id="exampleTerabox">https://terafileshare.com/s/1xJtL3j2LJ-ZsUA6zbG7Pug</span>
             </div>
         </div>
-        <div class="paste-footer">premium · yellow black · faphouse</div>
+        <div class="paste-footer" id="pasteFooter">premium · yellow black · faphouse + terabox</div>
     </div>
 </div>
 <script>
@@ -576,15 +881,132 @@ MAIN_PAGE_HTML = """
         document.getElementById('splashOverlay').classList.add('hidden');
         document.getElementById('pagePaste').classList.add('visible');
     });
-    document.getElementById('videoUrlInput').addEventListener('keydown', function(e) {
+    
+    const faphousePill = document.getElementById('faphousePill');
+    const teraboxPill = document.getElementById('teraboxPill');
+    const logoFaphouse = document.getElementById('logoFaphouse');
+    const logoTerabox = document.getElementById('logoTerabox');
+    const badgeFaphouse = document.getElementById('badgeFaphouse');
+    const badgeTerabox = document.getElementById('badgeTerabox');
+    const brandTagline = document.getElementById('brandTagline');
+    const pasteFooter = document.getElementById('pasteFooter');
+    const bgGlow = document.getElementById('bgGlow');
+    const bgGrid = document.getElementById('bgGrid');
+    const inputWrapper = document.getElementById('inputWrapper');
+    const loadBtn = document.getElementById('loadBtn');
+    const videoUrlInput = document.getElementById('videoUrlInput');
+    const urlForm = document.getElementById('urlForm');
+    const exampleFaphouse = document.getElementById('exampleFaphouse');
+    const exampleTerabox = document.getElementById('exampleTerabox');
+    
+    let currentPlatform = 'faphouse';
+    
+    function setPlatform(platform) {
+        currentPlatform = platform;
+        faphousePill.classList.remove('active-faphouse');
+        teraboxPill.classList.remove('active-terabox');
+        
+        if (platform === 'faphouse') {
+            faphousePill.classList.add('active-faphouse');
+            logoFaphouse.classList.remove('hidden');
+            logoFaphouse.classList.add('active');
+            logoTerabox.classList.remove('active');
+            logoTerabox.classList.add('hidden');
+            badgeFaphouse.classList.remove('terabox-badge');
+            brandTagline.classList.remove('terabox-tagline');
+            pasteFooter.classList.remove('terabox-footer');
+            bgGlow.classList.remove('terabox-glow');
+            bgGrid.classList.remove('terabox-grid');
+            inputWrapper.classList.remove('terabox-mode');
+            loadBtn.classList.remove('terabox-mode');
+            videoUrlInput.placeholder = 'https://faphouse2.com/videos/...';
+            loadBtn.textContent = 'load';
+            urlForm.action = '/play';
+        } else {
+            teraboxPill.classList.add('active-terabox');
+            logoTerabox.classList.remove('hidden');
+            logoTerabox.classList.add('active');
+            logoFaphouse.classList.remove('active');
+            logoFaphouse.classList.add('hidden');
+            badgeTerabox.classList.add('terabox-badge');
+            brandTagline.classList.add('terabox-tagline');
+            pasteFooter.classList.add('terabox-footer');
+            bgGlow.classList.add('terabox-glow');
+            bgGrid.classList.add('terabox-grid');
+            inputWrapper.classList.add('terabox-mode');
+            loadBtn.classList.add('terabox-mode');
+            videoUrlInput.placeholder = 'https://terafileshare.com/s/...';
+            loadBtn.textContent = 'extract';
+            urlForm.action = '/terabox';
+        }
+    }
+    
+    function detectPlatformFromUrl(val) {
+        if (val.includes('terabox') || 
+            val.includes('terafileshare') ||
+            val.includes('share.com') || 
+            val.includes('file.com') ||
+            val.includes('teraboxlink') ||
+            val.includes('1024terabox') ||
+            val.includes('teraboxapp')) {
+            setPlatform('terabox');
+        } else if (val.includes('faphouse') || val.includes('faphouse2')) {
+            setPlatform('faphouse');
+        }
+    }
+    
+    faphousePill.addEventListener('click', function() { 
+        setPlatform('faphouse'); 
+        videoUrlInput.value = '';
+    });
+    
+    teraboxPill.addEventListener('click', function() { 
+        setPlatform('terabox');
+        videoUrlInput.value = '';
+    });
+    
+    exampleFaphouse.addEventListener('click', function() {
+        setPlatform('faphouse');
+        videoUrlInput.value = this.textContent;
+        detectPlatformFromUrl(this.textContent.toLowerCase());
+        setTimeout(function() {
+            urlForm.submit();
+        }, 100);
+    });
+    
+    exampleTerabox.addEventListener('click', function() {
+        setPlatform('terabox');
+        videoUrlInput.value = this.textContent;
+        detectPlatformFromUrl(this.textContent.toLowerCase());
+        setTimeout(function() {
+            urlForm.submit();
+        }, 100);
+    });
+    
+    videoUrlInput.addEventListener('paste', function(e) {
+        setTimeout(function() {
+            const val = this.value.toLowerCase();
+            detectPlatformFromUrl(val);
+        }.bind(this), 50);
+    });
+    
+    videoUrlInput.addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        detectPlatformFromUrl(val);
+    });
+    
+    videoUrlInput.addEventListener('change', function() {
+        const val = this.value.toLowerCase();
+        detectPlatformFromUrl(val);
+    });
+    
+    videoUrlInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            document.getElementById('urlForm').submit();
+            const val = this.value.toLowerCase();
+            detectPlatformFromUrl(val);
+            urlForm.submit();
         }
-    });
-    document.getElementById('exampleLink').addEventListener('click', function() {
-        document.getElementById('videoUrlInput').value = this.textContent;
-        document.getElementById('urlForm').submit();
     });
 </script>
 </body>
@@ -1147,6 +1569,241 @@ PLAYER_PAGE_HTML = """
 </html>
 """
 
+TERABOX_PLAYER_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Terabox Player</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #000; 
+            font-family: Arial, sans-serif;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+        .container { 
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+        }
+        .video-wrapper {
+            flex: 1;
+            width: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+        .info {
+            padding: 10px 16px;
+            background: #111;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-top: 1px solid #1a1a1a;
+            flex-shrink: 0;
+        }
+        .info .file-info {
+            color: #555;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+        }
+        .info .file-info span { color: #888; }
+        .back-btn {
+            color: #00b4d8;
+            text-decoration: none;
+            padding: 4px 14px;
+            border: 1px solid #00b4d8;
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            transition: all 0.3s;
+        }
+        .back-btn:hover { background: #00b4d8; color: #000; }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #555;
+            font-size: 14px;
+            z-index: 5;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .loading .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #222;
+            border-top: 3px solid #00b4d8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-wrapper" id="videoWrapper">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Loading player...</div>
+            </div>
+            <iframe 
+                id="playerFrame"
+                src="{{ video_url }}" 
+                allowfullscreen 
+                allow="autoplay; encrypted-media; fullscreen"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+                loading="eager"
+            ></iframe>
+        </div>
+        <div class="info">
+            <div class="file-info">
+                📁 <span>{{ file_name }}</span>
+                {% if file_size %}
+                | 📦 <span>{{ file_size }}</span>
+                {% endif %}
+            </div>
+            <a href="/" class="back-btn">← Back</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const iframe = document.getElementById('playerFrame');
+            const loading = document.getElementById('loading');
+            
+            iframe.addEventListener('load', function() {
+                loading.style.display = 'none';
+            });
+            
+            setTimeout(function() {
+                loading.style.display = 'none';
+            }, 8000);
+        });
+    </script>
+</body>
+</html>
+"""
+
+ERROR_PAGE_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #0a0a0a; 
+            font-family: Arial, sans-serif;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .error-container {
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            background: #111;
+            border-radius: 16px;
+            border: 1px solid #222;
+            text-align: center;
+        }
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .error-title {
+            color: #ff4444;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .error-message {
+            color: #888;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .error-message .highlight {
+            color: #00b4d8;
+        }
+        .back-btn {
+            display: inline-block;
+            padding: 10px 30px;
+            background: #00b4d8;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: #48cae4;
+            transform: scale(0.98);
+        }
+        .error-details {
+            margin-top: 15px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #555;
+            word-break: break-all;
+        }
+        .error-details .label {
+            color: #444;
+            font-weight: bold;
+        }
+        .error-details .value {
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">❌</div>
+        <div class="error-title">{{ error_title }}</div>
+        <div class="error-message">{{ error_message }}</div>
+        <a href="/" class="back-btn">← Go Home</a>
+        {% if error_detail %}
+        <div class="error-details">
+            <span class="label">Details:</span>
+            <span class="value">{{ error_detail }}</span>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
+
 @app.route('/')
 def index():
     return render_template_string(MAIN_PAGE_HTML, video_url=None)
@@ -1162,32 +1819,67 @@ def play_video():
         video_url = video_url.split('#')[0]
     
     try:
-        logger.info(f"Play request for: {video_url}")
-        m3u8_url = client.get_m3u8_url(video_url)
+        logger.info(f"Faphouse play request for: {video_url}")
+        m3u8_url = faphouse_client.get_m3u8_url(video_url)
         
         if m3u8_url:
-            return render_template_string(PLAYER_PAGE_HTML, m3u8_url=m3u8_url)
+            return render_template_string(
+                PLAYER_PAGE_HTML,
+                m3u8_url=m3u8_url,
+                platform="faphouse",
+                file_name="",
+                file_size=""
+            )
         else:
-            return render_template_string("""
-                <div style="padding: 40px; text-align: center; background: #0a0a0a; color: #fff; min-height: 100vh; font-family: Arial;">
-                    <div style="max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #ff4444;">Could not find M3U8 URL</h2>
-                        <p style="color: #888; margin: 20px 0;">The video might be unavailable or blocked in your region.</p>
-                        <a href="/" style="color: #f5c518; text-decoration: none; display: inline-block; padding: 10px 30px; background: #222; border-radius: 6px;">Go Home</a>
-                    </div>
-                </div>
-            """)
+            return render_template_string(
+                ERROR_PAGE_HTML,
+                error_title="Video Not Found",
+                error_message="Could not find a playable video URL. The video might be unavailable, private, or removed.",
+                error_detail="No M3U8 URL found in the page source"
+            )
     except Exception as e:
         logger.error(f"Play error: {str(e)}")
-        return render_template_string("""
-            <div style="padding: 40px; text-align: center; background: #0a0a0a; color: #fff; min-height: 100vh; font-family: Arial;">
-                <div style="max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #ff4444;">Error</h2>
-                    <p style="color: #888; margin: 20px 0;">{{ error }}</p>
-                    <a href="/" style="color: #f5c518; text-decoration: none; display: inline-block; padding: 10px 30px; background: #222; border-radius: 6px;">Go Home</a>
-                </div>
-            </div>
-        """, error=str(e))
+        return render_template_string(
+            ERROR_PAGE_HTML,
+            error_title="Something Went Wrong",
+            error_message="An unexpected error occurred while trying to play this video.",
+            error_detail=str(e)
+        )
+
+@app.route('/terabox')
+def terabox_player():
+    video_url = request.args.get('url')
+    
+    if not video_url:
+        return render_template_string(MAIN_PAGE_HTML, video_url=None)
+    
+    try:
+        logger.info(f"Terabox request for: {video_url}")
+        result = terabox_client.process_terabox_link(video_url)
+        
+        if result.get('error'):
+            return render_template_string(
+                ERROR_PAGE_HTML,
+                error_title="Terabox Error",
+                error_message=result['error'],
+                error_detail=""
+            )
+        
+        return render_template_string(
+            TERABOX_PLAYER_HTML,
+            video_url=result['video_url'],
+            file_name=result.get('file_name', ''),
+            file_size=result.get('file_size', '')
+        )
+        
+    except Exception as e:
+        logger.error(f"Terabox error: {str(e)}")
+        return render_template_string(
+            ERROR_PAGE_HTML,
+            error_title="Something Went Wrong",
+            error_message="An unexpected error occurred while processing your request.",
+            error_detail=str(e)
+        )
 
 @app.route('/api/m3u8')
 def get_m3u8():
@@ -1200,13 +1892,14 @@ def get_m3u8():
         if '#' in video_url:
             video_url = video_url.split('#')[0]
             
-        m3u8_url = client.get_m3u8_url(video_url)
+        m3u8_url = faphouse_client.get_m3u8_url(video_url)
         
         if m3u8_url:
             return jsonify({
                 "success": True,
                 "m3u8_url": m3u8_url,
-                "video_url": video_url
+                "video_url": video_url,
+                "platform": "faphouse"
             })
         else:
             return jsonify({
@@ -1217,13 +1910,43 @@ def get_m3u8():
         logger.error(f"API error: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/terabox')
+def api_terabox():
+    video_url = request.args.get('url')
+    
+    if not video_url:
+        return jsonify({"error": "Missing 'url' parameter"}), 400
+    
+    try:
+        result = terabox_client.process_terabox_link(video_url)
+        
+        if result.get('error'):
+            return jsonify({"success": False, "error": result['error']}), 404
+        
+        return jsonify({
+            "success": True,
+            "video_url": result['video_url'],
+            "file_name": result.get('file_name', ''),
+            "file_size": result.get('file_size', ''),
+            "platform": "terabox"
+        })
+        
+    except Exception as e:
+        logger.error(f"API Terabox error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/api/status')
 def status():
     return jsonify({
         "status": "online",
-        "logged_in": client.logged_in,
-        "session_created": client.session_created,
-        "cache_info": client.get_m3u8_url.cache_info()._asdict()
+        "faphouse": {
+            "logged_in": faphouse_client.logged_in,
+            "session_created": faphouse_client.session_created,
+            "cache_info": faphouse_client.get_m3u8_url.cache_info()._asdict()
+        },
+        "terabox": {
+            "cache_size": len(terabox_client.cache)
+        }
     })
 
 def handler(request, context):
@@ -1232,26 +1955,38 @@ def handler(request, context):
 if __name__ == "__main__":
     print(f"""
 {'='*70}
-Faphouse Player API (Vercel Ready)
+Faphouse + Terabox Player API
 {'='*70}
 
 Features:
-  • Properly decodes compressed (brotli) responses
-  • Finds M3U8 URLs reliably
+  • Faphouse: Logs in and extracts M3U8 URLs (Video.js player)
+  • Terabox: Extracts proxy URL and embeds in iframe (uses proxy's own player)
   • LRU caching for fast responses
-  • Works on Vercel serverless
-  • Premium 18+ webplayer UI
+  • Premium 18+ webplayer UI with dual platform support
+  • User-friendly error pages
 
 Endpoints:
-  /play?url=VIDEO_URL     - Watch video with premium UI
-  /api/m3u8?url=VIDEO_URL - Get M3U8 URL
-  /api/status             - Check status
+  /play?url=URL         - Faphouse video player (Video.js)
+  /terabox?url=URL      - Terabox video player (iframe)
+  /api/m3u8?url=URL     - Get Faphouse M3U8 URL
+  /api/terabox?url=URL  - Get Terabox video URL
+  /api/status           - Check status
 
-Credentials:
+Faphouse Credentials:
   EMAIL: {EMAIL[:5]}... 
   PASSWORD: {'*' * 8}
+
+Supported Terabox Domains:
+  • terabox.com
+  • terafileshare.com  ← WORKS WITH YOUR LINK
+  • share.com
+  • file.com
+  • teraboxlink.com
+  • 1024terabox.com
+  • teraboxapp.com
 {'='*70}
 """)
     
     print("Starting server for local testing...")
+    print("Try this Terabox link: https://terafileshare.com/s/1xJtL3j2LJ-ZsUA6zbG7Pug")
     app.run(host='0.0.0.0', port=5000, debug=True)
