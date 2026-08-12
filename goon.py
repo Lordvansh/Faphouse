@@ -393,6 +393,8 @@ class TeraboxDownloader:
 faphouse_client = FaphouseClient()
 terabox_client = TeraboxDownloader()
 
+# ============= HTML TEMPLATES =============
+
 MAIN_PAGE_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -792,9 +794,256 @@ MAIN_PAGE_HTML = """
             color: #00b4d8;
         }
         .input-example .sep-dot { color: #1a1814; padding: 0 0.5rem; }
-        .paste-footer {
+        
+        /* Library Button */
+        .library-toggle-btn {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 50;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(255,255,255,0.02);
+            color: #3d3930;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+        }
+        .library-toggle-btn:hover {
+            background: rgba(255,255,255,0.02);
+            border-color: rgba(255,215,0,0.05);
+        }
+        .library-toggle-btn .bar {
+            width: 20px;
+            height: 2px;
+            background: #3d3930;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        .library-toggle-btn .bar:nth-child(2) { width: 14px; }
+        .library-toggle-btn .bar:nth-child(3) { width: 18px; }
+        .library-toggle-btn .badge-count {
             position: absolute;
-            bottom: 2rem;
+            top: -6px;
+            right: -6px;
+            background: rgba(245,197,24,0.1);
+            color: #f5c518;
+            font-size: 0.4rem;
+            padding: 0.05rem 0.35rem;
+            border-radius: 10px;
+            border: 1px solid rgba(245,197,24,0.04);
+            font-family: "JetBrains Mono", monospace;
+            min-width: 16px;
+            text-align: center;
+        }
+        .library-toggle-btn.terabox-mode .badge-count {
+            color: #00b4d8;
+            border-color: rgba(0,180,216,0.04);
+        }
+        
+        /* Library Sidebar */
+        .library-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100vh;
+            background: rgba(8,8,8,0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255,255,255,0.02);
+            z-index: 60;
+            transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .library-sidebar.open {
+            right: 0;
+        }
+        .library-sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 55;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .library-sidebar-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .library-sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+        .library-sidebar-title {
+            font-family: "Unbounded", sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #3d3930;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .library-sidebar-title .count {
+            color: #1a1814;
+            font-weight: 300;
+            font-size: 0.6rem;
+        }
+        .library-sidebar-close {
+            background: transparent;
+            border: none;
+            color: #3a362e;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            transition: color 0.3s ease;
+        }
+        .library-sidebar-close:hover {
+            color: #8a8477;
+        }
+        .library-sidebar-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+            margin-bottom: 0.8rem;
+        }
+        .library-sidebar-actions button {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
+            color: #3a362e;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.02);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .library-sidebar-actions button:hover {
+            color: #6b6558;
+            border-color: rgba(255,255,255,0.04);
+        }
+        .library-sidebar-actions button.clear:hover {
+            color: #ff4444;
+            border-color: rgba(255,68,68,0.1);
+        }
+        .library-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        .library-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        .library-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.01);
+        }
+        .library-list::-webkit-scrollbar-thumb {
+            background: rgba(255,215,0,0.1);
+            border-radius: 3px;
+        }
+        .library-item {
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(255,255,255,0.02);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        .library-item:hover {
+            background: rgba(255,255,255,0.03);
+            border-color: rgba(255,215,0,0.05);
+            transform: translateX(2px);
+        }
+        .library-item .item-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 0;
+        }
+        .library-item .item-icon {
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .library-item .item-title {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6rem;
+            color: #6b6558;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .library-item .item-platform {
+            padding: 0.05rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
+        }
+        .library-item .item-platform.faphouse {
+            background: rgba(245,197,24,0.04);
+            color: #f5c518;
+            border: 1px solid rgba(245,197,24,0.04);
+        }
+        .library-item .item-platform.terabox {
+            background: rgba(0,180,216,0.04);
+            color: #00b4d8;
+            border: 1px solid rgba(0,180,216,0.04);
+        }
+        .library-item .item-remove {
+            background: transparent;
+            border: none;
+            color: #3a362e;
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0 0.2rem;
+            flex-shrink: 0;
+        }
+        .library-item .item-remove:hover {
+            color: #ff4444;
+        }
+        .library-empty {
+            text-align: center;
+            padding: 2rem 0;
+            color: #1a1814;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+        }
+        .library-empty .empty-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .paste-footer {
+            position: fixed;
+            bottom: 1.5rem;
             left: 0;
             right: 0;
             text-align: center;
@@ -816,6 +1065,11 @@ MAIN_PAGE_HTML = """
             .input-wrapper .btn-load { width: 100%; justify-content: center; }
             .splash-18 { font-size: 5rem; }
             .badge-18 { font-size: 0.45rem; padding: 0.02rem 0.4rem; }
+            .library-sidebar {
+                width: 320px;
+                right: -340px;
+            }
+            .library-sidebar.open { right: 0; }
         }
         @media (max-width: 500px) {
             .logo-faphouse { font-size: 2.4rem; }
@@ -825,6 +1079,20 @@ MAIN_PAGE_HTML = """
             .badge-18 { font-size: 0.4rem; padding: 0.02rem 0.3rem; }
             .platform-selector { gap: 0.3rem; padding: 0.2rem; }
             .platform-selector .pill { padding: 0.3rem 0.8rem; font-size: 0.4rem; }
+            .library-sidebar {
+                width: 100%;
+                right: -100%;
+            }
+            .library-sidebar.open { right: 0; }
+            .library-toggle-btn {
+                top: 1rem;
+                right: 1rem;
+                width: 38px;
+                height: 38px;
+            }
+            .library-toggle-btn .bar { width: 16px; }
+            .library-toggle-btn .bar:nth-child(2) { width: 12px; }
+            .library-toggle-btn .bar:nth-child(3) { width: 14px; }
         }
     </style>
 </head>
@@ -873,13 +1141,222 @@ MAIN_PAGE_HTML = """
                 <span class="example-link terabox-example" id="exampleTerabox">https://terafileshare.com/s/1xJtL3j2LJ-ZsUA6zbG7Pug</span>
             </div>
         </div>
+        
         <div class="paste-footer" id="pasteFooter">premium · yellow black · faphouse + terabox</div>
+    </div>
+    
+    <!-- Library Toggle Button -->
+    <button class="library-toggle-btn" id="libraryToggleBtn">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="badge-count" id="libraryBadge">0</span>
+    </button>
+    
+    <!-- Library Backdrop -->
+    <div class="library-sidebar-backdrop" id="libraryBackdrop"></div>
+    
+    <!-- Library Sidebar -->
+    <div class="library-sidebar" id="librarySidebar">
+        <div class="library-sidebar-header">
+            <div class="library-sidebar-title">
+                📚 Library <span class="count" id="sidebarCount">(0)</span>
+            </div>
+            <button class="library-sidebar-close" id="libraryCloseBtn">✕</button>
+        </div>
+        <div class="library-sidebar-actions">
+            <button id="refreshLibraryBtn">↻ refresh</button>
+            <button class="clear" id="clearLibraryBtn">clear all</button>
+        </div>
+        <div class="library-list" id="libraryList">
+            <div class="library-empty">
+                <span class="empty-icon">🎬</span>
+                No videos in library yet<br>
+                Watch something to save it here
+            </div>
+        </div>
     </div>
 </div>
 <script>
+    // ===== LIBRARY FUNCTIONS =====
+    function getLibrary(platform) {
+        try {
+            const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        } catch {
+            return [];
+        }
+    }
+    
+    function saveLibrary(platform, library) {
+        const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+        localStorage.setItem(key, JSON.stringify(library));
+        renderLibrary();
+    }
+    
+    function addToLibrary(platform, video) {
+        const library = getLibrary(platform);
+        const exists = library.some(item => item.url === video.url);
+        if (!exists) {
+            video.watchedAt = new Date().toISOString();
+            library.unshift(video);
+            saveLibrary(platform, library);
+            showToast('📚 Added to ' + platform + ' library');
+            return true;
+        }
+        return false;
+    }
+    
+    function removeFromLibrary(platform, url) {
+        const library = getLibrary(platform).filter(item => item.url !== url);
+        saveLibrary(platform, library);
+    }
+    
+    function clearLibrary(platform) {
+        if (confirm('Clear all ' + platform + ' videos from library?')) {
+            saveLibrary(platform, []);
+        }
+    }
+    
+    function showToast(message) {
+        const toast = document.getElementById('saveToast');
+        if (!toast) {
+            const newToast = document.createElement('div');
+            newToast.id = 'saveToast';
+            newToast.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(245,197,24,0.1);
+                border: 1px solid rgba(245,197,24,0.05);
+                padding: 0.4rem 1.2rem;
+                border-radius: 30px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 0.5rem;
+                color: #f5c518;
+                opacity: 0;
+                transition: all 0.5s ease;
+                pointer-events: none;
+                z-index: 100;
+                backdrop-filter: blur(10px);
+            `;
+            document.body.appendChild(newToast);
+            newToast.textContent = message;
+            setTimeout(() => {
+                newToast.classList.add('show');
+                newToast.style.opacity = '1';
+                newToast.style.bottom = '100px';
+            }, 100);
+            setTimeout(() => {
+                newToast.style.opacity = '0';
+                newToast.style.bottom = '80px';
+                setTimeout(() => newToast.remove(), 500);
+            }, 3000);
+            return;
+        }
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+    
+    function renderLibrary() {
+        const platform = currentPlatform || 'faphouse';
+        const library = getLibrary(platform);
+        const list = document.getElementById('libraryList');
+        const badge = document.getElementById('libraryBadge');
+        const sidebarCount = document.getElementById('sidebarCount');
+        const btn = document.getElementById('libraryToggleBtn');
+        
+        badge.textContent = library.length;
+        sidebarCount.textContent = `(${library.length})`;
+        
+        if (platform === 'terabox') {
+            btn.classList.add('terabox-mode');
+        } else {
+            btn.classList.remove('terabox-mode');
+        }
+        
+        if (library.length === 0) {
+            list.innerHTML = `
+                <div class="library-empty">
+                    <span class="empty-icon">🎬</span>
+                    No ${platform} videos in library yet
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        library.forEach((item, index) => {
+            const icon = platform === 'faphouse' ? '🔞' : '📦';
+            const title = item.title || (item.file_name || 'Untitled');
+            
+            html += `
+                <div class="library-item" data-index="${index}" data-url="${item.url}">
+                    <div class="item-info">
+                        <span class="item-icon">${icon}</span>
+                        <span class="item-title">${title}</span>
+                        <span class="item-platform ${platform}">${platform}</span>
+                    </div>
+                    <button class="item-remove" data-url="${item.url}">✕</button>
+                </div>
+            `;
+        });
+        
+        list.innerHTML = html;
+        
+        list.querySelectorAll('.library-item').forEach(el => {
+            const url = el.dataset.url;
+            
+            el.addEventListener('click', function(e) {
+                if (e.target.closest('.item-remove')) return;
+                const form = document.getElementById('urlForm');
+                const input = document.getElementById('videoUrlInput');
+                input.value = url;
+                form.action = platform === 'faphouse' ? '/play' : '/terabox';
+                form.submit();
+                closeLibrary();
+            });
+            
+            el.querySelector('.item-remove').addEventListener('click', function(e) {
+                e.stopPropagation();
+                removeFromLibrary(platform, this.dataset.url);
+            });
+        });
+    }
+    
+    // ===== LIBRARY SIDEBAR CONTROLS =====
+    function toggleLibrary() {
+        const sidebar = document.getElementById('librarySidebar');
+        const backdrop = document.getElementById('libraryBackdrop');
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+        if (sidebar.classList.contains('open')) {
+            renderLibrary();
+        }
+    }
+    
+    function closeLibrary() {
+        document.getElementById('librarySidebar').classList.remove('open');
+        document.getElementById('libraryBackdrop').classList.remove('open');
+    }
+    
+    document.getElementById('libraryToggleBtn').addEventListener('click', toggleLibrary);
+    document.getElementById('libraryCloseBtn').addEventListener('click', closeLibrary);
+    document.getElementById('libraryBackdrop').addEventListener('click', closeLibrary);
+    document.getElementById('refreshLibraryBtn').addEventListener('click', renderLibrary);
+    document.getElementById('clearLibraryBtn').addEventListener('click', function() {
+        clearLibrary(currentPlatform);
+    });
+    
+    // ===== UI FUNCTIONS =====
     document.getElementById('enterBtn').addEventListener('click', function() {
         document.getElementById('splashOverlay').classList.add('hidden');
         document.getElementById('pagePaste').classList.add('visible');
+        renderLibrary();
     });
     
     const faphousePill = document.getElementById('faphousePill');
@@ -939,6 +1416,7 @@ MAIN_PAGE_HTML = """
             loadBtn.textContent = 'extract';
             urlForm.action = '/terabox';
         }
+        renderLibrary();
     }
     
     function detectPlatformFromUrl(val) {
@@ -1296,6 +1774,28 @@ PLAYER_PAGE_HTML = """
             z-index: 10;
             cursor: pointer;
         }
+        .save-toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(245,197,24,0.1);
+            border: 1px solid rgba(245,197,24,0.05);
+            padding: 0.4rem 1.2rem;
+            border-radius: 30px;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+            color: #f5c518;
+            opacity: 0;
+            transition: all 0.5s ease;
+            pointer-events: none;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .save-toast.show {
+            opacity: 1;
+            bottom: 100px;
+        }
         @media (max-width: 700px) {
             .video-wrapper { width: 96%; border-radius: 8px; }
             .header { padding: 0.6rem 1rem; }
@@ -1311,6 +1811,8 @@ PLAYER_PAGE_HTML = """
             .center-play svg { width: 22px; height: 22px; }
             .back-btn { font-size: 0.35rem; padding: 0.1rem 0.6rem; min-height: 20px; }
             .progress-section { padding: 0.2rem 0 0.1rem 0; }
+            .save-toast { font-size: 0.45rem; padding: 0.3rem 0.8rem; bottom: 60px; }
+            .save-toast.show { bottom: 80px; }
         }
         @media (max-width: 450px) {
             .center-play { width: 44px; height: 44px; }
@@ -1371,15 +1873,98 @@ PLAYER_PAGE_HTML = """
         </div>
     </div>
 </div>
+
+<div class="save-toast" id="saveToast">📚 Added to library</div>
+
 <script src="https://vjs.zencdn.net/8.0.0/video.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // ===== LIBRARY FUNCTIONS =====
+        function getLibrary(platform) {
+            try {
+                const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+                return JSON.parse(localStorage.getItem(key) || '[]');
+            } catch {
+                return [];
+            }
+        }
+        
+        function saveLibrary(platform, library) {
+            const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+            localStorage.setItem(key, JSON.stringify(library));
+        }
+        
+        function addToLibrary(platform, video) {
+            const library = getLibrary(platform);
+            const exists = library.some(item => item.url === video.url);
+            if (!exists) {
+                video.watchedAt = new Date().toISOString();
+                library.unshift(video);
+                saveLibrary(platform, library);
+                showToast('📚 Added to ' + platform + ' library');
+                return true;
+            }
+            return false;
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('saveToast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // ===== SAVE VIDEO TO LIBRARY =====
+        const videoUrl = "{{ m3u8_url }}";
+        const originalUrl = new URLSearchParams(window.location.search).get('url') || '';
+        
+        let videoTitle = '';
+        if (originalUrl) {
+            const match = originalUrl.match(/videos\/([^\/?]+)/);
+            if (match) {
+                videoTitle = match[1].replace(/-/g, ' ').replace(/_/g, ' ');
+            }
+        }
+        if (!videoTitle || videoTitle.length < 3) {
+            videoTitle = 'Faphouse Video';
+        }
+        
+        let saved = false;
+        
         var player = videojs('player', {
             html5: { hls: { enableLowInitialPlaylist: true, smoothQualityChange: true, overrideNative: true } },
             controls: false,
             autoplay: true,
             preload: 'auto'
         });
+        
+        player.on('play', function() {
+            if (!saved && videoUrl) {
+                saved = true;
+                addToLibrary('faphouse', {
+                    url: originalUrl || videoUrl,
+                    title: videoTitle,
+                    platform: 'faphouse',
+                    videoUrl: videoUrl
+                });
+            }
+        });
+        
+        setTimeout(function() {
+            if (!saved && videoUrl) {
+                saved = true;
+                addToLibrary('faphouse', {
+                    url: originalUrl || videoUrl,
+                    title: videoTitle,
+                    platform: 'faphouse',
+                    videoUrl: videoUrl
+                });
+            }
+        }, 5000);
+        
+        // ===== PLAYER CONTROLS =====
         const centerPlayBtn = document.getElementById('centerPlayBtn');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const seekBack = document.getElementById('seekBack');
@@ -1392,12 +1977,14 @@ PLAYER_PAGE_HTML = """
         const header = document.getElementById('header');
         const clickOverlay = document.getElementById('clickOverlay');
         const videoWrapper = document.getElementById('videoWrapper');
+        
         function formatTime(seconds) {
             if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
             const m = Math.floor(seconds / 60);
             const s = Math.floor(seconds % 60);
             return m + ':' + s.toString().padStart(2, '0');
         }
+        
         function updateTimeDisplay() {
             const currentTime = player.currentTime();
             const duration = player.duration();
@@ -1409,20 +1996,25 @@ PLAYER_PAGE_HTML = """
                 progressFill.style.width = '0%';
             }
         }
+        
         function toggleControls(show) {
             controlsWrapper.classList.toggle('visible', show);
             header.classList.toggle('visible', show);
         }
+        
         function toggleCenterPlay(show) {
             centerPlayBtn.classList.toggle('visible', show);
         }
+        
         let controlsVisible = true;
         let controlsTimeout;
+        
         function showControls() {
             toggleControls(true);
             controlsVisible = true;
             clearTimeout(controlsTimeout);
         }
+        
         function hideControlsDelayed() {
             clearTimeout(controlsTimeout);
             controlsTimeout = setTimeout(function() {
@@ -1432,6 +2024,7 @@ PLAYER_PAGE_HTML = """
                 }
             }, 3000);
         }
+        
         function togglePlayPause() {
             if (player.paused()) {
                 player.play();
@@ -1446,29 +2039,35 @@ PLAYER_PAGE_HTML = """
                 clearTimeout(controlsTimeout);
             }
         }
+        
         clickOverlay.addEventListener('click', function() {
             togglePlayPause();
         });
+        
         centerPlayBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             togglePlayPause();
         });
+        
         playPauseBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             togglePlayPause();
         });
+        
         seekBack.addEventListener('click', function(e) {
             e.stopPropagation();
             player.currentTime(Math.max(0, player.currentTime() - 10));
             showControls();
             if (!player.paused()) hideControlsDelayed();
         });
+        
         seekForward.addEventListener('click', function(e) {
             e.stopPropagation();
             player.currentTime(Math.min(player.duration() || 0, player.currentTime() + 10));
             showControls();
             if (!player.paused()) hideControlsDelayed();
         });
+        
         fullscreenBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             if (!document.fullscreenElement) {
@@ -1477,6 +2076,7 @@ PLAYER_PAGE_HTML = """
                 document.exitFullscreen?.();
             }
         });
+        
         let isDragging = false;
         progressTrack.addEventListener('mousedown', function(e) {
             isDragging = true;
@@ -1487,6 +2087,7 @@ PLAYER_PAGE_HTML = """
             progressTrack.classList.add('touching');
             e.preventDefault();
         });
+        
         document.addEventListener('mousemove', function(e) {
             if (isDragging) {
                 const rect = progressTrack.getBoundingClientRect();
@@ -1495,6 +2096,7 @@ PLAYER_PAGE_HTML = """
                 progressFill.style.width = (pos * 100) + '%';
             }
         });
+        
         document.addEventListener('mouseup', function() {
             if (isDragging) {
                 isDragging = false;
@@ -1503,6 +2105,7 @@ PLAYER_PAGE_HTML = """
                 if (!player.paused()) hideControlsDelayed();
             }
         });
+        
         progressTrack.addEventListener('touchstart', function(e) {
             const touch = e.touches[0];
             const rect = progressTrack.getBoundingClientRect();
@@ -1512,6 +2115,7 @@ PLAYER_PAGE_HTML = """
             progressTrack.classList.add('touching');
             e.preventDefault();
         }, { passive: false });
+        
         progressTrack.addEventListener('touchmove', function(e) {
             const touch = e.touches[0];
             const rect = progressTrack.getBoundingClientRect();
@@ -1520,11 +2124,13 @@ PLAYER_PAGE_HTML = """
             progressFill.style.width = (pos * 100) + '%';
             e.preventDefault();
         }, { passive: false });
+        
         progressTrack.addEventListener('touchend', function() {
             progressTrack.classList.remove('touching');
             showControls();
             if (!player.paused()) hideControlsDelayed();
         });
+        
         player.on('timeupdate', updateTimeDisplay);
         player.on('loadedmetadata', updateTimeDisplay);
         player.on('play', function() {
@@ -1545,15 +2151,18 @@ PLAYER_PAGE_HTML = """
             showControls();
             clearTimeout(controlsTimeout);
         });
+        
         document.addEventListener('keydown', function(e) {
             if (e.key === ' ' || e.key === 'Space') { e.preventDefault(); togglePlayPause(); }
             if (e.key === 'ArrowLeft') { e.preventDefault(); seekBack.click(); }
             if (e.key === 'ArrowRight') { e.preventDefault(); seekForward.click(); }
             if (e.key === 'f' || e.key === 'F') { e.preventDefault(); fullscreenBtn.click(); }
         });
+        
         clickOverlay.addEventListener('dblclick', function() {
             fullscreenBtn.click();
         });
+        
         setTimeout(function() {
             showControls();
             if (player.paused()) {
@@ -1562,6 +2171,7 @@ PLAYER_PAGE_HTML = """
                 hideControlsDelayed();
             }
         }, 500);
+        
         updateTimeDisplay();
     });
 </script>
@@ -1602,6 +2212,7 @@ TERABOX_PLAYER_HTML = """
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            position: relative;
         }
         .video-wrapper iframe {
             width: 100%;
@@ -1662,6 +2273,28 @@ TERABOX_PLAYER_HTML = """
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .save-toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,180,216,0.1);
+            border: 1px solid rgba(0,180,216,0.05);
+            padding: 0.4rem 1.2rem;
+            border-radius: 30px;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+            color: #00b4d8;
+            opacity: 0;
+            transition: all 0.5s ease;
+            pointer-events: none;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .save-toast.show {
+            opacity: 1;
+            bottom: 100px;
+        }
     </style>
 </head>
 <body>
@@ -1691,17 +2324,86 @@ TERABOX_PLAYER_HTML = """
         </div>
     </div>
 
+    <div class="save-toast" id="saveToast">📚 Added to library</div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // ===== LIBRARY FUNCTIONS =====
+            function getLibrary(platform) {
+                try {
+                    const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+                    return JSON.parse(localStorage.getItem(key) || '[]');
+                } catch {
+                    return [];
+                }
+            }
+            
+            function saveLibrary(platform, library) {
+                const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+                localStorage.setItem(key, JSON.stringify(library));
+            }
+            
+            function addToLibrary(platform, video) {
+                const library = getLibrary(platform);
+                const exists = library.some(item => item.url === video.url);
+                if (!exists) {
+                    video.watchedAt = new Date().toISOString();
+                    library.unshift(video);
+                    saveLibrary(platform, library);
+                    showToast('📚 Added to ' + platform + ' library');
+                    return true;
+                }
+                return false;
+            }
+            
+            function showToast(message) {
+                const toast = document.getElementById('saveToast');
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+            
+            // ===== SAVE VIDEO TO LIBRARY =====
+            const videoUrl = "{{ video_url }}";
+            const originalUrl = new URLSearchParams(window.location.search).get('url') || '';
+            const fileName = "{{ file_name }}" || 'Terabox Video';
+            
+            let saved = false;
+            
             const iframe = document.getElementById('playerFrame');
             const loading = document.getElementById('loading');
             
             iframe.addEventListener('load', function() {
                 loading.style.display = 'none';
+                
+                if (!saved && (videoUrl || originalUrl)) {
+                    saved = true;
+                    addToLibrary('terabox', {
+                        url: originalUrl || videoUrl,
+                        title: fileName,
+                        platform: 'terabox',
+                        videoUrl: videoUrl,
+                        file_name: fileName,
+                        file_size: "{{ file_size }}"
+                    });
+                }
             });
             
             setTimeout(function() {
                 loading.style.display = 'none';
+                if (!saved && (videoUrl || originalUrl)) {
+                    saved = true;
+                    addToLibrary('terabox', {
+                        url: originalUrl || videoUrl,
+                        title: fileName,
+                        platform: 'terabox',
+                        videoUrl: videoUrl,
+                        file_name: fileName,
+                        file_size: "{{ file_size }}"
+                    });
+                }
             }, 8000);
         });
     </script>
@@ -1803,6 +2505,8 @@ ERROR_PAGE_HTML = """
 </body>
 </html>
 """
+
+# ============= ROUTES =============
 
 @app.route('/')
 def index():
@@ -1955,15 +2659,18 @@ def handler(request, context):
 if __name__ == "__main__":
     print(f"""
 {'='*70}
-Faphouse + Terabox Player API
+Faphouse + Terabox Player API with Collapsible Library
 {'='*70}
 
 Features:
   • Faphouse: Logs in and extracts M3U8 URLs (Video.js player)
-  • Terabox: Extracts proxy URL and embeds in iframe (uses proxy's own player)
-  • LRU caching for fast responses
+  • Terabox: Extracts proxy URL and embeds in iframe
+  • 📚 Collapsible library sidebar (hamburger menu button)
+  • 📝 Separate libraries for each platform
+  • 🔄 Click library items to replay videos
+  • ❌ Remove individual videos or clear library per platform
+  • 🔴 Live badge count on library button
   • Premium 18+ webplayer UI with dual platform support
-  • User-friendly error pages
 
 Endpoints:
   /play?url=URL         - Faphouse video player (Video.js)
@@ -1975,15 +2682,6 @@ Endpoints:
 Faphouse Credentials:
   EMAIL: {EMAIL[:5]}... 
   PASSWORD: {'*' * 8}
-
-Supported Terabox Domains:
-  • terabox.com
-  • terafileshare.com  ← WORKS WITH YOUR LINK
-  • share.com
-  • file.com
-  • teraboxlink.com
-  • 1024terabox.com
-  • teraboxapp.com
 {'='*70}
 """)
     
