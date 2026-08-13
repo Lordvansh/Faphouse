@@ -404,27 +404,27 @@ MAIN_PAGE_HTML = """
     <title>Faphouse · The House</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Monoton&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0a0a0b;
-            --panel: #131316;
-            --panel-2: #1b1b1f;
+            --bg: #050506;
+            --panel: #101014;
+            --panel-2: #191920;
             --line: rgba(255, 255, 255, 0.08);
             --line-strong: rgba(255, 255, 255, 0.16);
             --ink: #f5f5f7;
             --ink-2: #9a9aa3;
-            --ink-3: #5d5d66;
-            --fap: #ffd60a;
-            --ter: #00a8ff;
+            --ink-3: #55555f;
+            --fap: #ff2d78;
+            --ter: #00aaff;
             --acc: var(--fap);
-            --acc-rgb: 255, 214, 10;
+            --acc-rgb: 255, 45, 120;
             --ease: cubic-bezier(0.16, 1, 0.3, 1);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         body[data-platform="terabox"] {
             --acc: var(--ter);
-            --acc-rgb: 0, 168, 255;
+            --acc-rgb: 0, 170, 255;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -434,22 +434,21 @@ MAIN_PAGE_HTML = """
             min-height: 100vh;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
-            transition: background 0.6s var(--ease);
         }
-        ::selection { background: var(--acc); color: #0a0a0b; }
+        ::selection { background: var(--acc); color: #050506; }
         .glow {
             position: fixed;
             width: 70vmax;
             height: 70vmax;
             border-radius: 50%;
             filter: blur(90px);
-            opacity: 0.15;
+            opacity: 0.14;
             pointer-events: none;
             z-index: 0;
             transition: opacity 0.8s var(--ease);
         }
-        .glow-fap { background: radial-gradient(circle, rgba(255, 214, 10, 0.9), transparent 62%); top: -28%; left: 50%; transform: translateX(-50%); }
-        .glow-ter { background: radial-gradient(circle, rgba(0, 168, 255, 0.9), transparent 62%); bottom: -30%; right: -12%; }
+        .glow-fap { background: radial-gradient(circle, rgba(255, 45, 120, 0.9), transparent 62%); top: -28%; left: 50%; transform: translateX(-50%); }
+        .glow-ter { background: radial-gradient(circle, rgba(0, 170, 255, 0.9), transparent 62%); bottom: -30%; right: -12%; }
         body[data-platform="faphouse"] .glow-ter { opacity: 0; }
         body[data-platform="terabox"] .glow-fap { opacity: 0; }
         .vignette {
@@ -457,10 +456,10 @@ MAIN_PAGE_HTML = """
             inset: 0;
             pointer-events: none;
             z-index: 1;
-            background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
         }
 
-        /* ============ SPLASH / 18+ INTRO ============ */
+        /* ============ SPLASH / 18+ NEON ============ */
         .splash {
             position: fixed;
             inset: 0;
@@ -470,42 +469,41 @@ MAIN_PAGE_HTML = """
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 1.4rem;
+            gap: 1.5rem;
             text-align: center;
             padding: 2rem;
             transition: opacity 0.7s var(--ease), transform 0.8s var(--ease), filter 0.7s var(--ease);
         }
-        .splash.leave { opacity: 0; transform: scale(1.14); filter: blur(12px); pointer-events: none; }
-        .splash .a18-wrap {
-            overflow: hidden;
-            animation: a18Glow 3s ease-in-out infinite;
-            animation-delay: 0.9s;
+        .splash.leave { opacity: 0; transform: scale(1.1); filter: blur(14px); pointer-events: none; }
+        .splash .a18-wrap { position: relative; display: flex; }
+        .splash .a18-halo {
+            position: absolute;
+            inset: -40% -15%;
+            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.28), transparent 70%);
+            filter: blur(36px);
+            animation: breath 3.2s ease-in-out infinite;
+            transition: background 0.6s var(--ease);
         }
         .splash .a18 {
-            font-family: "Unbounded", sans-serif;
-            font-weight: 900;
+            position: relative;
+            font-family: "Monoton", sans-serif;
+            font-weight: 400;
             font-size: clamp(6rem, 24vw, 13rem);
             line-height: 1;
-            background: linear-gradient(180deg, #ffffff 35%, var(--acc));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            display: block;
-            transform: translateY(110%);
+            display: flex;
+        }
+        .splash .a18 .l {
+            color: rgba(255, 255, 255, 0.06);
+            text-shadow: none;
             opacity: 0;
-            animation: a18In 0.9s var(--spring) forwards;
-            animation-delay: 0.15s;
+            transition: opacity 0.3s var(--ease), color 0.3s var(--ease), text-shadow 0.6s var(--ease);
         }
-        @keyframes a18In {
-            from { transform: translateY(110%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes a18Glow {
-            0%, 100% { filter: drop-shadow(0 0 24px rgba(var(--acc-rgb), 0.3)); }
-            50% { filter: drop-shadow(0 0 70px rgba(var(--acc-rgb), 0.65)); }
+        .splash .a18.in .l {
+            opacity: 1;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.9), 0 0 12px var(--acc), 0 0 28px var(--acc), 0 0 60px var(--acc);
         }
         .splash .s-tag {
-            font-family: "Space Grotesk", sans-serif;
             font-size: 0.72rem;
             font-weight: 600;
             letter-spacing: 0.55em;
@@ -513,39 +511,43 @@ MAIN_PAGE_HTML = """
             color: var(--ink-2);
             opacity: 0;
             animation: fadeUp 0.7s var(--ease) forwards;
-            animation-delay: 0.55s;
+            animation-delay: 0.9s;
         }
         .splash .s-warn {
             font-size: 0.8rem;
             line-height: 1.7;
             color: var(--ink-3);
-            max-width: 360px;
+            max-width: 380px;
             opacity: 0;
             animation: fadeUp 0.7s var(--ease) forwards;
-            animation-delay: 0.7s;
+            animation-delay: 1.05s;
         }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
         .enter-btn {
             margin-top: 0.6rem;
-            font-family: "Unbounded", sans-serif;
+            font-family: "Space Grotesk", sans-serif;
             font-weight: 700;
             font-size: 0.78rem;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            color: #0a0a0b;
-            background: var(--acc);
-            border: none;
+            color: #fff;
+            background: transparent;
+            border: 1px solid var(--acc);
             border-radius: 999px;
-            padding: 1rem 2.6rem;
+            padding: 1rem 2.8rem;
             cursor: pointer;
-            box-shadow: 0 10px 40px rgba(var(--acc-rgb), 0.4);
-            transition: transform 0.3s var(--spring), box-shadow 0.5s var(--ease);
+            box-shadow: 0 0 18px rgba(var(--acc-rgb), 0.3), inset 0 0 12px rgba(var(--acc-rgb), 0.15);
+            text-shadow: 0 0 10px var(--acc);
+            transition: transform 0.3s var(--spring), box-shadow 0.4s var(--ease), border-color 0.4s var(--ease);
             opacity: 0;
             animation: fadeUp 0.7s var(--ease) forwards;
-            animation-delay: 0.85s;
+            animation-delay: 1.2s;
         }
         @media (hover: hover) and (pointer: fine) {
-            .enter-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 16px 60px rgba(var(--acc-rgb), 0.6); }
+            .enter-btn:hover {
+                transform: translateY(-2px) scale(1.02);
+                box-shadow: 0 0 34px rgba(var(--acc-rgb), 0.55), inset 0 0 18px rgba(var(--acc-rgb), 0.25);
+            }
         }
         .enter-btn:active { transform: scale(0.94); }
         .splash .s-foot {
@@ -571,15 +573,19 @@ MAIN_PAGE_HTML = """
             pointer-events: none;
         }
         .brand {
-            font-family: "Unbounded", sans-serif;
-            font-weight: 800;
-            font-size: 0.95rem;
-            letter-spacing: 0.02em;
+            font-family: "Space Grotesk", sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.06em;
             display: flex;
             align-items: baseline;
         }
         .brand .w { color: #fff; }
-        .brand .a { color: var(--acc); transition: color 0.6s var(--ease); }
+        .brand .a {
+            color: var(--acc);
+            text-shadow: 0 0 10px var(--acc);
+            transition: color 0.6s var(--ease), text-shadow 0.6s var(--ease);
+        }
         .brand .end { color: var(--ink-3); font-weight: 400; font-size: 0.7rem; margin-left: 0.5rem; letter-spacing: 0.08em; }
         .top-right { display: flex; align-items: center; gap: 0.7rem; pointer-events: auto; }
         .pill {
@@ -610,7 +616,7 @@ MAIN_PAGE_HTML = """
         .lib-btn { cursor: pointer; font-family: inherit; }
         .lib-btn .count {
             background: var(--acc);
-            color: #0a0a0b;
+            color: #050506;
             border-radius: 999px;
             font-size: 0.62rem;
             font-weight: 700;
@@ -628,67 +634,117 @@ MAIN_PAGE_HTML = """
             align-items: center;
             justify-content: center;
             padding: 6.5rem 1.5rem 3rem;
-            gap: 1.7rem;
+            gap: 1.8rem;
         }
 
-        /* ============ WORDMARK STACK ============ */
-        .logo-stage {
+        /* ============ NEON SIGN ============ */
+        .neon-area {
             position: relative;
             width: 100%;
-            height: clamp(110px, 21vw, 200px);
+            height: clamp(130px, 23vw, 215px);
             display: flex;
             align-items: center;
             justify-content: center;
-            perspective: 1000px;
         }
-        .logo {
+        .sign {
             position: absolute;
+            inset: 0;
+            margin: auto;
+            width: max-content;
+            height: max-content;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: "Unbounded", sans-serif;
-            font-weight: 900;
-            font-size: clamp(2.4rem, 9.5vw, 6.8rem);
-            line-height: 1;
-            letter-spacing: 0.01em;
-            text-transform: uppercase;
             cursor: pointer;
             user-select: none;
             opacity: 0;
-            transition: transform 0.85s var(--spring), opacity 0.5s var(--ease);
+            transition: transform 0.85s var(--spring), opacity 0.45s var(--ease);
             will-change: transform;
-            white-space: nowrap;
         }
-        .logo.active { opacity: 1; }
-        .logo.down { transform: translateY(135%) rotate(1.5deg) scale(0.92); opacity: 0; pointer-events: none; }
-        .logo-inner {
+        .sign.active { opacity: 1; }
+        .sign.down { transform: translateY(135%) scale(0.94); opacity: 0; pointer-events: none; }
+        .sign.flicker-off { animation: neonOff 0.45s ease forwards; }
+        .sign.buzz-on { animation: neonBuzzOn 0.6s ease; }
+        @keyframes neonOff {
+            0% { opacity: 1; } 8% { opacity: 0.35; } 16% { opacity: 0.85; }
+            26% { opacity: 0.15; } 36% { opacity: 0.6; } 48% { opacity: 0.05; }
+            60% { opacity: 0.4; } 75% { opacity: 0; } 100% { opacity: 0; }
+        }
+        @keyframes neonBuzzOn {
+            0% { opacity: 0; } 12% { opacity: 0.9; } 20% { opacity: 0.25; }
+            30% { opacity: 1; } 38% { opacity: 0.4; } 50% { opacity: 0.95; }
+            62% { opacity: 0.3; } 76% { opacity: 1; } 88% { opacity: 0.6; } 100% { opacity: 1; }
+        }
+        .sign .halo {
+            position: absolute;
+            inset: -40% -8%;
+            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.2), transparent 70%);
+            filter: blur(30px);
+            animation: breath 3.4s ease-in-out infinite;
+            transition: background 0.6s var(--ease);
+            pointer-events: none;
+        }
+        @keyframes breath {
+            0%, 100% { opacity: 0.75; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1.04); }
+        }
+        .sign-inner {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            transform-style: preserve-3d;
-            will-change: transform;
+            font-family: "Monoton", sans-serif;
+            font-weight: 400;
+            font-size: clamp(2.2rem, 8.6vw, 6rem);
+            line-height: 1;
+            letter-spacing: 0.02em;
+            animation: neonHum 9s linear infinite;
         }
-        .logo .word { display: inline-flex; }
-        .logo .word .l {
-            display: inline-block;
-            transform: translateY(120%) rotate(8deg);
+        @keyframes neonHum {
+            0%, 95.4%, 100% { opacity: 1; }
+            95.6% { opacity: 0.55; } 95.9% { opacity: 0.9; }
+            96.3% { opacity: 0.4; } 96.8% { opacity: 0.85; }
+            97.4% { opacity: 0.65; } 98% { opacity: 1; }
+        }
+        .sign .word { display: inline-flex; }
+        .sign .word .l {
             opacity: 0;
-            transition: transform 0.7s var(--spring), opacity 0.5s var(--ease);
+            transition: opacity 0.25s var(--ease), color 0.35s var(--ease), text-shadow 0.5s var(--ease);
         }
-        .logo.in .word .l { transform: none; opacity: 1; }
-        .word.white { color: #fff; }
-        .word.accent { color: var(--acc); transition: color 0.6s var(--ease); }
-        .logo .sheen {
+        .word.white .l { color: rgba(255, 255, 255, 0.05); text-shadow: none; }
+        .word.accent .l { color: rgba(255, 255, 255, 0.05); text-shadow: none; }
+        .sign.in .word.white .l {
+            opacity: 1;
+            color: #f8f8f9;
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.9), 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        .sign.in .word.accent .l {
+            opacity: 1;
+            color: var(--acc);
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.7), 0 0 10px var(--acc), 0 0 22px var(--acc), 0 0 44px var(--acc), 0 0 80px var(--acc);
+        }
+
+        /* ============ WET FLOOR REFLECTION ============ */
+        .sign .sign-reflection {
             position: absolute;
-            inset: -25%;
+            top: 104%;
+            left: 0;
+            right: 0;
+            transform: scaleY(-1);
+            opacity: 0.26;
+            filter: blur(3px);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 62%);
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 62%);
             pointer-events: none;
-            background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.12) 50%, transparent 58%);
-            transform: translateX(-130%);
-            animation: sheen 5s var(--ease) infinite;
-            animation-delay: 1.2s;
-            mix-blend-mode: overlay;
+            z-index: -1;
         }
-        @keyframes sheen { 0% { transform: translateX(-130%); } 55%, 100% { transform: translateX(130%); } }
+        .sign .sign-reflection .l {
+            text-shadow: none !important;
+            opacity: 0.4 !important;
+            transition: none !important;
+        }
+        .sign .sign-reflection .word.white .l,
+        .sign .sign-reflection .word.accent .l { color: var(--acc); }
 
         /* ============ TAGLINE ============ */
         .tagline {
@@ -734,7 +790,7 @@ MAIN_PAGE_HTML = """
         }
         .switch-btn .arrow { transition: transform 0.4s var(--ease); font-size: 0.85rem; }
         @media (hover: hover) and (pointer: fine) {
-            .switch-btn:hover { border-color: var(--acc); color: #fff; box-shadow: 0 0 30px rgba(var(--acc-rgb), 0.18); }
+            .switch-btn:hover { border-color: var(--acc); color: #fff; box-shadow: 0 0 28px rgba(var(--acc-rgb), 0.22); }
             .switch-btn:hover .arrow { transform: translateY(3px); }
         }
         .switch-btn:active { transform: scale(0.94); }
@@ -750,17 +806,18 @@ MAIN_PAGE_HTML = """
             padding: 0.45rem 0.45rem 0.45rem 1.2rem;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            transition: border-color 0.5s var(--ease), box-shadow 0.5s var(--ease), transform 0.4s var(--ease);
+            transition: border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
         }
         .deck:focus-within {
             border-color: var(--acc);
-            box-shadow: 0 0 0 4px rgba(var(--acc-rgb), 0.16), 0 24px 70px rgba(0, 0, 0, 0.55);
+            box-shadow: 0 0 0 4px rgba(var(--acc-rgb), 0.14), 0 0 30px rgba(var(--acc-rgb), 0.15), 0 24px 70px rgba(0, 0, 0, 0.55);
         }
         .deck-prefix {
-            font-family: "Unbounded", sans-serif;
+            font-family: "Space Grotesk", sans-serif;
             font-weight: 700;
             font-size: 0.78rem;
             color: var(--acc);
+            text-shadow: 0 0 10px var(--acc);
             white-space: nowrap;
             transition: color 0.5s var(--ease);
         }
@@ -778,23 +835,23 @@ MAIN_PAGE_HTML = """
         .deck-input::placeholder { color: var(--ink-3); }
         .launch-btn {
             background: var(--acc);
-            color: #0a0a0b;
+            color: #050506;
             border: none;
             border-radius: 14px;
             padding: 0.95rem 1.7rem;
-            font-family: "Unbounded", sans-serif;
+            font-family: "Space Grotesk", sans-serif;
             font-weight: 700;
-            font-size: 0.76rem;
-            letter-spacing: 0.1em;
+            font-size: 0.74rem;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
             cursor: pointer;
             white-space: nowrap;
-            box-shadow: 0 8px 30px rgba(var(--acc-rgb), 0.35);
+            box-shadow: 0 0 22px rgba(var(--acc-rgb), 0.45);
             transition: transform 0.3s var(--spring), background 0.5s var(--ease), box-shadow 0.5s var(--ease), opacity 0.4s var(--ease);
             touch-action: manipulation;
         }
         @media (hover: hover) and (pointer: fine) {
-            .launch-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 44px rgba(var(--acc-rgb), 0.5); }
+            .launch-btn:hover { transform: translateY(-1px); box-shadow: 0 0 40px rgba(var(--acc-rgb), 0.65); }
         }
         .launch-btn:active { transform: scale(0.95); }
         .launch-btn.loading { opacity: 0.55; pointer-events: none; animation: loadPulse 0.9s ease-in-out infinite; }
@@ -838,7 +895,7 @@ MAIN_PAGE_HTML = """
             right: 0;
             bottom: 0;
             width: min(400px, 92vw);
-            background: rgba(15, 15, 18, 0.92);
+            background: rgba(12, 12, 16, 0.92);
             backdrop-filter: blur(26px);
             -webkit-backdrop-filter: blur(26px);
             border-left: 1px solid var(--line-strong);
@@ -851,8 +908,8 @@ MAIN_PAGE_HTML = """
         }
         .drawer.open { transform: none; }
         .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
-        .drawer-title { font-family: "Unbounded", sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.02em; }
-        .drawer-title .a { color: var(--acc); transition: color 0.5s var(--ease); }
+        .drawer-title { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em; }
+        .drawer-title .a { color: var(--acc); text-shadow: 0 0 10px var(--acc); transition: color 0.5s var(--ease); }
         .icon-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--line-strong);
@@ -895,13 +952,12 @@ MAIN_PAGE_HTML = """
             padding: 0.2rem 0.5rem;
             border-radius: 999px;
         }
-        .itag.fap { background: rgba(255, 214, 10, 0.14); color: #ffd60a; }
-        .itag.ter { background: rgba(0, 168, 255, 0.14); color: #00a8ff; }
+        .itag.fap { background: rgba(255, 45, 120, 0.14); color: #ff2d78; }
+        .itag.ter { background: rgba(0, 170, 255, 0.14); color: #00aaff; }
         .drawer-item .ititle { font-size: 0.78rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .drawer-item .itime { font-size: 0.62rem; color: var(--ink-3); flex-shrink: 0; }
         .drawer-empty { font-size: 0.8rem; color: var(--ink-3); text-align: center; padding: 2rem 0; }
 
-        /* ============ FOOTER ============ */
         .foot {
             position: relative;
             z-index: 5;
@@ -915,19 +971,21 @@ MAIN_PAGE_HTML = """
 
         @media (max-width: 640px) {
             .topbar { padding: 1rem 1.1rem; }
-            .topbar .brand { font-size: 0.85rem; }
+            .topbar .brand { font-size: 0.8rem; }
             .pill .pdot { display: none; }
-            .stage { gap: 1.4rem; padding: 5.5rem 1rem 2rem; }
+            .stage { gap: 1.5rem; padding: 5.5rem 1rem 2rem; }
+            .neon-area { height: clamp(90px, 26vw, 150px); }
             .deck { padding: 0.4rem 0.4rem 0.4rem 1rem; }
             .deck-input { font-size: 0.9rem; }
             .launch-btn { padding: 0.9rem 1.2rem; font-size: 0.7rem; }
             .hint { gap: 0.7rem; font-size: 0.64rem; }
+            .sign .sign-reflection { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .splash .a18, .splash .s-tag, .splash .s-warn, .enter-btn { animation: none; opacity: 1; transform: none; }
-            .logo .word .l { animation: none; transform: none; opacity: 1; }
-            .logo { transition: opacity 0.4s var(--ease); }
-            .pill .pdot, .logo .sheen { animation: none; }
+            .splash .a18 .l, .splash .s-tag, .splash .s-warn, .enter-btn { animation: none; opacity: 1; transform: none; }
+            .sign .word .l { transition: none; opacity: 1; color: var(--acc); text-shadow: 0 0 12px var(--acc); }
+            .sign-inner, .pill .pdot, .sign .halo, .splash .a18-halo { animation: none; }
+            .sign { transition: opacity 0.4s var(--ease); }
         }
     </style>
 </head>
@@ -937,8 +995,9 @@ MAIN_PAGE_HTML = """
 <div class="vignette"></div>
 
 <div class="splash" id="splash">
-    <div class="a18-wrap">
-        <span class="a18">18+</span>
+    <div class="a18-wrap" id="a18Wrap">
+        <div class="a18-halo"></div>
+        <div class="a18" id="a18">18+</div>
     </div>
     <div class="s-tag">Adult Content</div>
     <div class="s-warn">This site contains adult material. You must be 18 or older to continue. By entering, you agree to our Terms of Service and Privacy Policy.</div>
@@ -959,20 +1018,22 @@ MAIN_PAGE_HTML = """
 </header>
 
 <main class="stage">
-    <div class="logo-stage">
-        <div class="logo active" id="gateFaphouse">
-            <div class="logo-inner">
+    <div class="neon-area">
+        <div class="sign active in" id="gateFaphouse">
+            <div class="halo"></div>
+            <div class="sign-inner">
                 <span class="word white">FAP</span>
                 <span class="word accent">HOUSE</span>
-                <span class="sheen"></span>
             </div>
+            <div class="sign-reflection"></div>
         </div>
-        <div class="logo down" id="gateTerabox">
-            <div class="logo-inner">
+        <div class="sign down" id="gateTerabox">
+            <div class="halo"></div>
+            <div class="sign-inner">
                 <span class="word white">TERA</span>
                 <span class="word accent">BOX</span>
-                <span class="sheen"></span>
             </div>
+            <div class="sign-reflection"></div>
         </div>
     </div>
 
@@ -1035,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var currentPlatform = 'faphouse';
 
-    // ===== LETTER SPLIT FOR WORDMARKS =====
+    // ===== NEON LETTER BUILD + REFLECTION =====
     function splitLetters(root) {
         var words = root.querySelectorAll('.word');
         var idx = 0;
@@ -1045,25 +1106,31 @@ document.addEventListener('DOMContentLoaded', function() {
             for (var i = 0; i < text.length; i++) {
                 var s = document.createElement('span');
                 s.className = 'l';
-                s.style.transitionDelay = (idx * 45) + 'ms';
+                s.style.transitionDelay = (idx * 60) + 'ms';
                 s.textContent = text[i];
                 word.appendChild(s);
                 idx++;
             }
         });
     }
+    function buildReflection(sign) {
+        var inner = sign.querySelector('.sign-inner');
+        var ref = sign.querySelector('.sign-reflection');
+        if (!inner || !ref) return;
+        ref.appendChild(inner.cloneNode(true));
+    }
     splitLetters(gateFaphouse);
     splitLetters(gateTerabox);
-
-    function revealLogos() {
-        gateFaphouse.classList.add('in');
-        gateTerabox.classList.add('in');
-    }
+    buildReflection(gateFaphouse);
+    buildReflection(gateTerabox);
+    var a18 = document.getElementById('a18');
+    if (a18) splitLetters(a18);
 
     // ===== SPLASH =====
     function enterApp() {
         if (splash) splash.classList.add('leave');
-        revealLogos();
+        if (a18) a18.classList.add('in');
+        gateFaphouse.classList.add('in');
         setTimeout(function() {
             if (splash) splash.style.display = 'none';
         }, 800);
@@ -1071,29 +1138,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     enterBtn.addEventListener('click', enterApp);
     try {
-        if (sessionStorage.getItem('fap18') === '1') {
-            enterApp();
-        }
+        if (sessionStorage.getItem('fap18') === '1') enterApp();
     } catch (e) {}
 
-    // ===== PLATFORM =====
+    // ===== PLATFORM SWAP =====
     function setPlatform(platform) {
         if (platform === currentPlatform) return;
         currentPlatform = platform;
         document.body.dataset.platform = platform;
         deckPrefix.textContent = platform === 'faphouse' ? 'fap://' : 'tera://';
         switchLabel.textContent = platform === 'faphouse' ? 'Terabox' : 'Faphouse';
-        if (platform === 'faphouse') {
-            gateFaphouse.classList.remove('down');
-            gateFaphouse.classList.add('active');
-            gateTerabox.classList.remove('active');
-            gateTerabox.classList.add('down');
-        } else {
-            gateTerabox.classList.remove('down');
-            gateTerabox.classList.add('active');
-            gateFaphouse.classList.remove('active');
-            gateFaphouse.classList.add('down');
-        }
+        var out, inn;
+        if (platform === 'faphouse') { out = gateTerabox; inn = gateFaphouse; }
+        else { out = gateFaphouse; inn = gateTerabox; }
+        out.classList.add('flicker-off');
+        inn.classList.remove('down');
+        inn.classList.add('active', 'in', 'buzz-on');
+        setTimeout(function() {
+            out.classList.remove('active', 'in', 'flicker-off');
+            out.classList.add('down');
+        }, 430);
+        setTimeout(function() {
+            inn.classList.remove('buzz-on');
+        }, 700);
     }
 
     gateFaphouse.addEventListener('click', function() { setPlatform('faphouse'); });
@@ -1187,32 +1254,6 @@ document.addEventListener('DOMContentLoaded', function() {
     tick();
     setInterval(tick, 1000);
 
-    // ===== 3D TILT =====
-    var canTilt = false;
-    try {
-        canTilt = window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
-                  !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    } catch (e) {}
-    if (canTilt) {
-        var inners = [gateFaphouse.querySelector('.logo-inner'), gateTerabox.querySelector('.logo-inner')];
-        var tx = 0, ty = 0, cx = 0, cy = 0;
-        document.addEventListener('mousemove', function(e) {
-            tx = (e.clientX / window.innerWidth - 0.5);
-            ty = (e.clientY / window.innerHeight - 0.5);
-        });
-        function loop() {
-            cx += (tx - cx) * 0.08;
-            cy += (ty - cy) * 0.08;
-            var rx = -cy * 5;
-            var ry = cx * 8;
-            inners.forEach(function(el) {
-                el.style.transform = 'rotateX(' + rx + 'deg) rotateY(' + ry + 'deg)';
-            });
-            requestAnimationFrame(loop);
-        }
-        loop();
-    }
-
     // ===== KEYBOARD =====
     document.addEventListener('keydown', function(e) {
         if (e.key === 'f' || e.key === 'F') setPlatform('faphouse');
@@ -1233,15 +1274,15 @@ PLAYER_PAGE_HTML = r"""
     <title>Faphouse · The House</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://vjs.zencdn.net/8.0.0/video-js.css" rel="stylesheet" />
     <style>
         :root {
-            --bg: #0a0a0b;
+            --bg: #050506;
             --ink: #f5f5f7;
             --ink-2: #9a9aa3;
-            --acc: #ffd60a;
-            --acc-rgb: 255, 214, 10;
+            --acc: #ff2d78;
+            --acc-rgb: 255, 45, 120;
             --line: rgba(255, 255, 255, 0.1);
             --ease: cubic-bezier(0.16, 1, 0.3, 1);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1334,13 +1375,13 @@ PLAYER_PAGE_HTML = r"""
             padding: 0.34rem 0.85rem;
         }
         .header-brand .word {
-            font-family: "Unbounded", sans-serif;
+            font-family: "Space Grotesk", sans-serif;
             font-weight: 800;
             font-size: 0.66rem;
             letter-spacing: 0.02em;
             color: #fff;
         }
-        .header-brand .dot { color: var(--acc); }
+        .header-brand .dot { color: var(--acc); text-shadow: 0 0 10px var(--acc); }
         .header-badge {
             font-size: 0.55rem;
             font-weight: 800;
@@ -1348,7 +1389,7 @@ PLAYER_PAGE_HTML = r"""
             background: var(--acc);
             border-radius: 999px;
             padding: 0.12rem 0.4rem;
-            font-family: "Unbounded", sans-serif;
+            font-family: "Space Grotesk", sans-serif;
         }
         .header-right { display: flex; align-items: center; gap: 0.5rem; }
         .quality-badge {
@@ -1655,7 +1696,7 @@ PLAYER_PAGE_HTML = r"""
         }
         @keyframes metaIn { to { opacity: 1; transform: translateY(0); } }
         .meta-title {
-            font-family: "Unbounded", sans-serif;
+            font-family: "Space Grotesk", sans-serif;
             font-weight: 700;
             font-size: clamp(0.82rem, 2vw, 1rem);
             letter-spacing: 0.01em;
@@ -1665,7 +1706,7 @@ PLAYER_PAGE_HTML = r"""
             text-overflow: ellipsis;
             max-width: 60%;
         }
-        .meta-title .a { color: var(--acc); }
+        .meta-title .a { color: var(--acc); text-shadow: 0 0 12px var(--acc); }
         .meta-caption {
             font-size: 0.68rem;
             font-weight: 400;
@@ -1679,7 +1720,7 @@ PLAYER_PAGE_HTML = r"""
             border: none;
             border-radius: 999px;
             padding: 0.55rem 1.1rem;
-            font-family: "Unbounded", sans-serif;
+            font-family: "Space Grotesk", sans-serif;
             font-weight: 700;
             font-size: 0.64rem;
             letter-spacing: 0.06em;
