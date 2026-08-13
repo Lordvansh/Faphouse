@@ -404,62 +404,95 @@ MAIN_PAGE_HTML = """
     <title>Faphouse · The House</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Monoton&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #050506;
-            --panel: #101014;
-            --panel-2: #191920;
+            --bg: #07070a;
+            --panel: #0e0e13;
+            --panel-2: #16161d;
             --line: rgba(255, 255, 255, 0.08);
             --line-strong: rgba(255, 255, 255, 0.16);
             --ink: #f5f5f7;
             --ink-2: #9a9aa3;
             --ink-3: #55555f;
-            --fap: #ff2d78;
-            --ter: #00aaff;
+            --fap: #ffd60a;
+            --ter: #00a8ff;
             --acc: var(--fap);
-            --acc-rgb: 255, 45, 120;
+            --acc-rgb: 255, 214, 10;
             --ease: cubic-bezier(0.16, 1, 0.3, 1);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --mono: "JetBrains Mono", monospace;
+            --disp: "Orbitron", sans-serif;
+            --body: "Space Grotesk", sans-serif;
         }
         body[data-platform="terabox"] {
             --acc: var(--ter);
-            --acc-rgb: 0, 170, 255;
+            --acc-rgb: 0, 168, 255;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             background: var(--bg);
             color: var(--ink);
-            font-family: "Space Grotesk", sans-serif;
+            font-family: var(--body);
             min-height: 100vh;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
         }
-        ::selection { background: var(--acc); color: #050506; }
+        ::selection { background: var(--acc); color: #07070a; }
+
+        /* ===== BACKGROUND LAYERS ===== */
         .glow {
             position: fixed;
-            width: 70vmax;
-            height: 70vmax;
+            width: 65vmax;
+            height: 65vmax;
             border-radius: 50%;
             filter: blur(90px);
-            opacity: 0.14;
+            opacity: 0.12;
             pointer-events: none;
             z-index: 0;
             transition: opacity 0.8s var(--ease);
         }
-        .glow-fap { background: radial-gradient(circle, rgba(255, 45, 120, 0.9), transparent 62%); top: -28%; left: 50%; transform: translateX(-50%); }
-        .glow-ter { background: radial-gradient(circle, rgba(0, 170, 255, 0.9), transparent 62%); bottom: -30%; right: -12%; }
+        .glow-fap { background: radial-gradient(circle, rgba(255, 214, 10, 0.85), transparent 62%); top: -30%; left: 50%; transform: translateX(-50%); }
+        .glow-ter { background: radial-gradient(circle, rgba(0, 168, 255, 0.85), transparent 62%); bottom: -32%; right: -14%; }
         body[data-platform="faphouse"] .glow-ter { opacity: 0; }
         body[data-platform="terabox"] .glow-fap { opacity: 0; }
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 34px 34px;
+            -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
+            mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
+        }
+        #particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
         .vignette {
             position: fixed;
             inset: 0;
             pointer-events: none;
             z-index: 1;
-            background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+            background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.6) 100%);
         }
 
-        /* ============ SPLASH / 18+ NEON ============ */
+        /* ===== HUD CORNERS ===== */
+        .hud {
+            position: fixed;
+            width: 26px;
+            height: 26px;
+            z-index: 30;
+            pointer-events: none;
+            opacity: 0.4;
+            transition: border-color 0.6s var(--ease);
+            animation: hudPulse 5s ease-in-out infinite;
+        }
+        .hud.tl { top: 14px; left: 14px; border-top: 2px solid var(--acc); border-left: 2px solid var(--acc); border-top-left-radius: 8px; }
+        .hud.tr { top: 14px; right: 14px; border-top: 2px solid var(--acc); border-right: 2px solid var(--acc); border-top-right-radius: 8px; }
+        .hud.bl { bottom: 14px; left: 14px; border-bottom: 2px solid var(--acc); border-left: 2px solid var(--acc); border-bottom-left-radius: 8px; }
+        .hud.br { bottom: 14px; right: 14px; border-bottom: 2px solid var(--acc); border-right: 2px solid var(--acc); border-bottom-right-radius: 8px; }
+        @keyframes hudPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.55; } }
+
+        /* ===== SPLASH / BOOT ===== */
         .splash {
             position: fixed;
             inset: 0;
@@ -469,44 +502,54 @@ MAIN_PAGE_HTML = """
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 1.5rem;
+            gap: 1.6rem;
             text-align: center;
             padding: 2rem;
-            transition: opacity 0.7s var(--ease), transform 0.8s var(--ease), filter 0.7s var(--ease);
+            transition: opacity 0.6s var(--ease), transform 0.8s var(--ease), filter 0.6s var(--ease);
         }
-        .splash.leave { opacity: 0; transform: scale(1.1); filter: blur(14px); pointer-events: none; }
+        .splash.leave { opacity: 0; transform: scale(1.06); filter: blur(10px); pointer-events: none; }
+        .splash .term {
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            line-height: 1.9;
+            color: var(--ink-2);
+            min-height: 3.8rem;
+            letter-spacing: 0.02em;
+        }
+        .splash .term .ok { color: var(--acc); }
         .splash .a18-wrap { position: relative; display: flex; }
         .splash .a18-halo {
             position: absolute;
             inset: -40% -15%;
-            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.28), transparent 70%);
+            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.16), transparent 70%);
             filter: blur(36px);
-            animation: breath 3.2s ease-in-out infinite;
+            animation: breath 3.4s ease-in-out infinite;
             transition: background 0.6s var(--ease);
         }
+        @keyframes breath { 0%, 100% { opacity: 0.7; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1.04); } }
         .splash .a18 {
             position: relative;
-            font-family: "Monoton", sans-serif;
-            font-weight: 400;
-            font-size: clamp(6rem, 24vw, 13rem);
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(5.5rem, 22vw, 12rem);
             line-height: 1;
+            letter-spacing: 0.04em;
             display: flex;
         }
         .splash .a18 .l {
-            color: rgba(255, 255, 255, 0.06);
-            text-shadow: none;
             opacity: 0;
-            transition: opacity 0.3s var(--ease), color 0.3s var(--ease), text-shadow 0.6s var(--ease);
-        }
-        .splash .a18.in .l {
-            opacity: 1;
+            transform: translateY(24px);
+            filter: blur(10px);
             color: #fff;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.9), 0 0 12px var(--acc), 0 0 28px var(--acc), 0 0 60px var(--acc);
+            text-shadow: 0 0 24px rgba(var(--acc-rgb), 0.45);
+            transition: opacity 0.5s var(--ease), transform 0.6s var(--spring), filter 0.5s var(--ease);
         }
+        .splash .a18.in .l { opacity: 1; transform: none; filter: none; }
         .splash .s-tag {
-            font-size: 0.72rem;
-            font-weight: 600;
-            letter-spacing: 0.55em;
+            font-family: var(--disp);
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.5em;
             text-transform: uppercase;
             color: var(--ink-2);
             opacity: 0;
@@ -525,41 +568,38 @@ MAIN_PAGE_HTML = """
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
         .enter-btn {
             margin-top: 0.6rem;
-            font-family: "Space Grotesk", sans-serif;
+            font-family: var(--disp);
             font-weight: 700;
-            font-size: 0.78rem;
-            letter-spacing: 0.2em;
+            font-size: 0.72rem;
+            letter-spacing: 0.22em;
             text-transform: uppercase;
-            color: #fff;
-            background: transparent;
-            border: 1px solid var(--acc);
-            border-radius: 999px;
+            color: #07070a;
+            background: var(--acc);
+            border: none;
+            border-radius: 10px;
             padding: 1rem 2.8rem;
             cursor: pointer;
-            box-shadow: 0 0 18px rgba(var(--acc-rgb), 0.3), inset 0 0 12px rgba(var(--acc-rgb), 0.15);
-            text-shadow: 0 0 10px var(--acc);
-            transition: transform 0.3s var(--spring), box-shadow 0.4s var(--ease), border-color 0.4s var(--ease);
+            box-shadow: 0 8px 34px rgba(var(--acc-rgb), 0.4);
+            transition: transform 0.3s var(--spring), box-shadow 0.4s var(--ease), background 0.5s var(--ease);
             opacity: 0;
             animation: fadeUp 0.7s var(--ease) forwards;
             animation-delay: 1.2s;
         }
         @media (hover: hover) and (pointer: fine) {
-            .enter-btn:hover {
-                transform: translateY(-2px) scale(1.02);
-                box-shadow: 0 0 34px rgba(var(--acc-rgb), 0.55), inset 0 0 18px rgba(var(--acc-rgb), 0.25);
-            }
+            .enter-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 50px rgba(var(--acc-rgb), 0.6); }
         }
-        .enter-btn:active { transform: scale(0.94); }
+        .enter-btn:active { transform: scale(0.95); }
         .splash .s-foot {
             position: absolute;
             bottom: 1.6rem;
-            font-size: 0.62rem;
-            letter-spacing: 0.18em;
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.16em;
             text-transform: uppercase;
             color: var(--ink-3);
         }
 
-        /* ============ TOP BAR ============ */
+        /* ===== TOP BAR ===== */
         .topbar {
             position: absolute;
             top: 0;
@@ -573,20 +613,20 @@ MAIN_PAGE_HTML = """
             pointer-events: none;
         }
         .brand {
-            font-family: "Space Grotesk", sans-serif;
-            font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 0.06em;
+            font-family: var(--disp);
+            font-weight: 800;
+            font-size: 0.92rem;
+            letter-spacing: 0.05em;
             display: flex;
             align-items: baseline;
         }
         .brand .w { color: #fff; }
         .brand .a {
             color: var(--acc);
-            text-shadow: 0 0 10px var(--acc);
+            text-shadow: 0 0 14px rgba(var(--acc-rgb), 0.5);
             transition: color 0.6s var(--ease), text-shadow 0.6s var(--ease);
         }
-        .brand .end { color: var(--ink-3); font-weight: 400; font-size: 0.7rem; margin-left: 0.5rem; letter-spacing: 0.08em; }
+        .brand .end { font-family: var(--mono); color: var(--ink-3); font-weight: 400; font-size: 0.62rem; margin-left: 0.6rem; letter-spacing: 0.12em; }
         .top-right { display: flex; align-items: center; gap: 0.7rem; pointer-events: auto; }
         .pill {
             display: flex;
@@ -594,10 +634,11 @@ MAIN_PAGE_HTML = """
             gap: 0.5rem;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--line-strong);
-            border-radius: 999px;
-            padding: 0.5rem 0.9rem;
-            font-size: 0.7rem;
-            font-weight: 600;
+            border-radius: 8px;
+            padding: 0.48rem 0.9rem;
+            font-family: var(--mono);
+            font-size: 0.64rem;
+            font-weight: 500;
             color: var(--ink-2);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -613,18 +654,18 @@ MAIN_PAGE_HTML = """
             transition: background 0.5s var(--ease);
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        .lib-btn { cursor: pointer; font-family: inherit; }
+        .lib-btn { cursor: pointer; }
         .lib-btn .count {
             background: var(--acc);
-            color: #050506;
-            border-radius: 999px;
-            font-size: 0.62rem;
+            color: #07070a;
+            border-radius: 6px;
+            font-size: 0.6rem;
             font-weight: 700;
-            padding: 0.12rem 0.42rem;
+            padding: 0.1rem 0.42rem;
             transition: background 0.5s var(--ease);
         }
 
-        /* ============ STAGE ============ */
+        /* ===== STAGE ===== */
         .stage {
             position: relative;
             z-index: 5;
@@ -634,14 +675,14 @@ MAIN_PAGE_HTML = """
             align-items: center;
             justify-content: center;
             padding: 6.5rem 1.5rem 3rem;
-            gap: 1.8rem;
+            gap: 1.7rem;
         }
 
-        /* ============ NEON SIGN ============ */
-        .neon-area {
+        /* ===== HOLOGRAM SIGN ===== */
+        .holo-area {
             position: relative;
             width: 100%;
-            height: clamp(130px, 23vw, 215px);
+            height: clamp(120px, 20vw, 185px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -658,100 +699,136 @@ MAIN_PAGE_HTML = """
             cursor: pointer;
             user-select: none;
             opacity: 0;
-            transition: transform 0.85s var(--spring), opacity 0.45s var(--ease);
+            transition: transform 0.9s var(--spring), opacity 0.5s var(--ease);
             will-change: transform;
         }
         .sign.active { opacity: 1; }
         .sign.down { transform: translateY(135%) scale(0.94); opacity: 0; pointer-events: none; }
-        .sign.flicker-off { animation: neonOff 0.45s ease forwards; }
-        .sign.buzz-on { animation: neonBuzzOn 0.6s ease; }
-        @keyframes neonOff {
-            0% { opacity: 1; } 8% { opacity: 0.35; } 16% { opacity: 0.85; }
-            26% { opacity: 0.15; } 36% { opacity: 0.6; } 48% { opacity: 0.05; }
-            60% { opacity: 0.4; } 75% { opacity: 0; } 100% { opacity: 0; }
-        }
-        @keyframes neonBuzzOn {
-            0% { opacity: 0; } 12% { opacity: 0.9; } 20% { opacity: 0.25; }
-            30% { opacity: 1; } 38% { opacity: 0.4; } 50% { opacity: 0.95; }
-            62% { opacity: 0.3; } 76% { opacity: 1; } 88% { opacity: 0.6; } 100% { opacity: 1; }
-        }
         .sign .halo {
             position: absolute;
-            inset: -40% -8%;
-            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.2), transparent 70%);
-            filter: blur(30px);
-            animation: breath 3.4s ease-in-out infinite;
+            inset: -45% -10%;
+            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.12), transparent 70%);
+            filter: blur(34px);
+            animation: breath 4s ease-in-out infinite;
             transition: background 0.6s var(--ease);
             pointer-events: none;
         }
-        @keyframes breath {
-            0%, 100% { opacity: 0.75; transform: scale(0.98); }
-            50% { opacity: 1; transform: scale(1.04); }
+        .parallax { transform-style: preserve-3d; will-change: transform; }
+        .float { animation: floatBob 6s ease-in-out infinite; will-change: transform; }
+        @keyframes floatBob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-9px); }
         }
-        .sign-inner {
+        .wordmark {
             position: relative;
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(2.3rem, 8.8vw, 6rem);
+            line-height: 1;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: "Monoton", sans-serif;
-            font-weight: 400;
-            font-size: clamp(2.2rem, 8.6vw, 6rem);
-            line-height: 1;
-            letter-spacing: 0.02em;
-            animation: neonHum 9s linear infinite;
         }
-        @keyframes neonHum {
-            0%, 95.4%, 100% { opacity: 1; }
-            95.6% { opacity: 0.55; } 95.9% { opacity: 0.9; }
-            96.3% { opacity: 0.4; } 96.8% { opacity: 0.85; }
-            97.4% { opacity: 0.65; } 98% { opacity: 1; }
+        .wordmark.glitch { animation: holoGlitch 0.4s steps(2, end); }
+        @keyframes holoGlitch {
+            0% { clip-path: inset(0 0 0 0); transform: translate(0); }
+            20% { clip-path: inset(8% 0 62% 0); transform: translate(-8px, 2px); }
+            40% { clip-path: inset(55% 0 12% 0); transform: translate(6px, -2px); }
+            60% { clip-path: inset(28% 0 46% 0); transform: translate(-5px, 1px); }
+            80% { clip-path: inset(70% 0 4% 0); transform: translate(7px, -1px); }
+            100% { clip-path: inset(0 0 0 0); transform: translate(0); }
         }
-        .sign .word { display: inline-flex; }
-        .sign .word .l {
+        .wordmark .word { display: inline-flex; }
+        .wordmark .word .l {
+            display: inline-block;
             opacity: 0;
-            transition: opacity 0.25s var(--ease), color 0.35s var(--ease), text-shadow 0.5s var(--ease);
+            transform: translateY(26px);
+            filter: blur(8px);
+            transition: opacity 0.45s var(--ease), transform 0.6s var(--spring), filter 0.45s var(--ease);
         }
-        .word.white .l { color: rgba(255, 255, 255, 0.05); text-shadow: none; }
-        .word.accent .l { color: rgba(255, 255, 255, 0.05); text-shadow: none; }
-        .sign.in .word.white .l {
-            opacity: 1;
-            color: #f8f8f9;
-            text-shadow: 0 0 4px rgba(255, 255, 255, 0.9), 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-        .sign.in .word.accent .l {
-            opacity: 1;
-            color: var(--acc);
-            text-shadow: 0 0 4px rgba(255, 255, 255, 0.7), 0 0 10px var(--acc), 0 0 22px var(--acc), 0 0 44px var(--acc), 0 0 80px var(--acc);
-        }
-
-        /* ============ WET FLOOR REFLECTION ============ */
-        .sign .sign-reflection {
+        .wordmark.in .word .l { opacity: 1; transform: none; filter: none; }
+        .word.white .l { color: #f5f5f7; text-shadow: 0 0 18px rgba(255, 255, 255, 0.25); }
+        .word.accent .l { color: var(--acc); text-shadow: 0 0 20px rgba(var(--acc-rgb), 0.45); }
+        .wordmark .scan {
             position: absolute;
-            top: 104%;
+            left: -6%;
+            right: -6%;
+            height: 34%;
+            top: -12%;
+            background: linear-gradient(180deg, transparent, rgba(var(--acc-rgb), 0.12), transparent);
+            animation: scanSweep 5s ease-in-out infinite;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+        @keyframes scanSweep {
+            0% { top: -20%; opacity: 0; }
+            8% { opacity: 1; }
+            48% { opacity: 1; }
+            58% { opacity: 0; }
+            100% { top: 110%; opacity: 0; }
+        }
+        .sign-reflection {
+            position: absolute;
+            top: 103%;
             left: 0;
             right: 0;
             transform: scaleY(-1);
-            opacity: 0.26;
-            filter: blur(3px);
-            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 62%);
-            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 62%);
+            opacity: 0.12;
+            filter: blur(2px);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent 70%);
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent 70%);
             pointer-events: none;
-            z-index: -1;
         }
-        .sign .sign-reflection .l {
-            text-shadow: none !important;
-            opacity: 0.4 !important;
-            transition: none !important;
-        }
-        .sign .sign-reflection .word.white .l,
-        .sign .sign-reflection .word.accent .l { color: var(--acc); }
+        .sign-reflection .l { opacity: 0.5 !important; transition: none !important; filter: none !important; }
+        .sign-reflection .word.white .l { color: #888; text-shadow: none; }
+        .sign-reflection .word.accent .l { color: var(--acc); text-shadow: none; }
 
-        /* ============ TAGLINE ============ */
+        /* ===== BOOT BAR ===== */
+        .boot {
+            width: min(460px, 86vw);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 2.6rem;
+            opacity: 0;
+            transition: opacity 0.3s var(--ease);
+        }
+        .boot.run { opacity: 1; }
+        .boot-label {
+            font-family: var(--mono);
+            font-size: 0.64rem;
+            color: var(--ink-2);
+            letter-spacing: 0.06em;
+        }
+        .boot-track {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .boot-fill {
+            display: block;
+            width: 0%;
+            height: 100%;
+            background: var(--acc);
+            box-shadow: 0 0 12px rgba(var(--acc-rgb), 0.8);
+            border-radius: 3px;
+            transition: background 0.5s var(--ease);
+        }
+        .boot.run .boot-fill { animation: bootFill 1.05s var(--ease) forwards; }
+        @keyframes bootFill { from { width: 0%; } to { width: 100%; } }
+
+        /* ===== TAGLINE ===== */
         .tagline {
             position: relative;
             height: 1.4rem;
-            font-size: 0.68rem;
-            font-weight: 600;
+            font-family: var(--disp);
+            font-size: 0.62rem;
+            font-weight: 700;
             letter-spacing: 0.5em;
             text-transform: uppercase;
             color: var(--ink-2);
@@ -761,7 +838,7 @@ MAIN_PAGE_HTML = """
         body[data-platform="faphouse"] .tagline .tag-fap { opacity: 1; }
         body[data-platform="terabox"] .tagline .tag-ter { opacity: 1; }
 
-        /* ============ SWITCH BUTTON ============ */
+        /* ===== SWITCH BUTTON ===== */
         .switch-btn {
             display: flex;
             align-items: center;
@@ -769,11 +846,11 @@ MAIN_PAGE_HTML = """
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--line-strong);
             color: var(--ink-2);
-            border-radius: 999px;
+            border-radius: 8px;
             padding: 0.5rem 1.15rem;
-            font-family: "Space Grotesk", sans-serif;
-            font-size: 0.76rem;
-            font-weight: 600;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            font-weight: 500;
             cursor: pointer;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -781,28 +858,29 @@ MAIN_PAGE_HTML = """
             touch-action: manipulation;
         }
         .switch-btn .sdot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
             background: var(--acc);
             box-shadow: 0 0 12px var(--acc);
+            transform: rotate(45deg);
             transition: background 0.5s var(--ease);
         }
         .switch-btn .arrow { transition: transform 0.4s var(--ease); font-size: 0.85rem; }
         @media (hover: hover) and (pointer: fine) {
-            .switch-btn:hover { border-color: var(--acc); color: #fff; box-shadow: 0 0 28px rgba(var(--acc-rgb), 0.22); }
+            .switch-btn:hover { border-color: var(--acc); color: #fff; box-shadow: 0 0 24px rgba(var(--acc-rgb), 0.2); }
             .switch-btn:hover .arrow { transform: translateY(3px); }
         }
-        .switch-btn:active { transform: scale(0.94); }
+        .switch-btn:active { transform: scale(0.95); }
 
-        /* ============ DECK / URL PASTER ============ */
+        /* ===== DECK / URL PASTER ===== */
         .deck {
             width: min(680px, 94vw);
             display: flex;
             align-items: center;
             background: var(--panel);
             border: 1px solid var(--line-strong);
-            border-radius: 18px;
+            border-radius: 12px;
             padding: 0.45rem 0.45rem 0.45rem 1.2rem;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
@@ -810,14 +888,14 @@ MAIN_PAGE_HTML = """
         }
         .deck:focus-within {
             border-color: var(--acc);
-            box-shadow: 0 0 0 4px rgba(var(--acc-rgb), 0.14), 0 0 30px rgba(var(--acc-rgb), 0.15), 0 24px 70px rgba(0, 0, 0, 0.55);
+            box-shadow: 0 0 0 3px rgba(var(--acc-rgb), 0.12), 0 0 26px rgba(var(--acc-rgb), 0.14), 0 24px 70px rgba(0, 0, 0, 0.55);
         }
         .deck-prefix {
-            font-family: "Space Grotesk", sans-serif;
+            font-family: var(--mono);
             font-weight: 700;
-            font-size: 0.78rem;
+            font-size: 0.74rem;
             color: var(--acc);
-            text-shadow: 0 0 10px var(--acc);
+            text-shadow: 0 0 10px rgba(var(--acc-rgb), 0.6);
             white-space: nowrap;
             transition: color 0.5s var(--ease);
         }
@@ -828,30 +906,30 @@ MAIN_PAGE_HTML = """
             border: none;
             outline: none;
             color: #fff;
-            font-family: "Space Grotesk", sans-serif;
-            font-size: 1rem;
+            font-family: var(--mono);
+            font-size: 0.88rem;
             padding: 0.85rem 0.8rem;
         }
         .deck-input::placeholder { color: var(--ink-3); }
         .launch-btn {
             background: var(--acc);
-            color: #050506;
+            color: #07070a;
             border: none;
-            border-radius: 14px;
+            border-radius: 9px;
             padding: 0.95rem 1.7rem;
-            font-family: "Space Grotesk", sans-serif;
-            font-weight: 700;
-            font-size: 0.74rem;
-            letter-spacing: 0.12em;
+            font-family: var(--disp);
+            font-weight: 800;
+            font-size: 0.7rem;
+            letter-spacing: 0.14em;
             text-transform: uppercase;
             cursor: pointer;
             white-space: nowrap;
-            box-shadow: 0 0 22px rgba(var(--acc-rgb), 0.45);
+            box-shadow: 0 0 20px rgba(var(--acc-rgb), 0.4);
             transition: transform 0.3s var(--spring), background 0.5s var(--ease), box-shadow 0.5s var(--ease), opacity 0.4s var(--ease);
             touch-action: manipulation;
         }
         @media (hover: hover) and (pointer: fine) {
-            .launch-btn:hover { transform: translateY(-1px); box-shadow: 0 0 40px rgba(var(--acc-rgb), 0.65); }
+            .launch-btn:hover { transform: translateY(-1px); box-shadow: 0 0 38px rgba(var(--acc-rgb), 0.6); }
         }
         .launch-btn:active { transform: scale(0.95); }
         .launch-btn.loading { opacity: 0.55; pointer-events: none; animation: loadPulse 0.9s ease-in-out infinite; }
@@ -861,7 +939,8 @@ MAIN_PAGE_HTML = """
             display: flex;
             align-items: center;
             gap: 1.1rem;
-            font-size: 0.7rem;
+            font-family: var(--mono);
+            font-size: 0.64rem;
             color: var(--ink-3);
             flex-wrap: wrap;
             justify-content: center;
@@ -869,14 +948,23 @@ MAIN_PAGE_HTML = """
         .hint kbd {
             background: var(--panel-2);
             border: 1px solid var(--line-strong);
-            border-radius: 6px;
-            padding: 0.12rem 0.45rem;
-            font-size: 0.64rem;
+            border-radius: 4px;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.6rem;
             color: var(--ink-2);
             font-family: inherit;
         }
 
-        /* ============ LIBRARY DRAWER ============ */
+        .log {
+            font-family: var(--mono);
+            font-size: 0.66rem;
+            color: var(--ink-3);
+            letter-spacing: 0.04em;
+        }
+        .log .cur { color: var(--acc); animation: blink 1s steps(1) infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* ===== LIBRARY DRAWER ===== */
         .scrim {
             position: fixed;
             inset: 0;
@@ -895,7 +983,7 @@ MAIN_PAGE_HTML = """
             right: 0;
             bottom: 0;
             width: min(400px, 92vw);
-            background: rgba(12, 12, 16, 0.92);
+            background: rgba(10, 10, 15, 0.92);
             backdrop-filter: blur(26px);
             -webkit-backdrop-filter: blur(26px);
             border-left: 1px solid var(--line-strong);
@@ -908,12 +996,12 @@ MAIN_PAGE_HTML = """
         }
         .drawer.open { transform: none; }
         .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
-        .drawer-title { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em; }
-        .drawer-title .a { color: var(--acc); text-shadow: 0 0 10px var(--acc); transition: color 0.5s var(--ease); }
+        .drawer-title { font-family: var(--disp); font-weight: 800; font-size: 0.8rem; letter-spacing: 0.08em; }
+        .drawer-title .a { color: var(--acc); text-shadow: 0 0 12px rgba(var(--acc-rgb), 0.6); transition: color 0.5s var(--ease); }
         .icon-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--line-strong);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--ink-2);
             width: 34px;
             height: 34px;
@@ -935,7 +1023,7 @@ MAIN_PAGE_HTML = """
             gap: 0.7rem;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--line);
-            border-radius: 12px;
+            border-radius: 8px;
             padding: 0.7rem 0.9rem;
             text-decoration: none;
             color: var(--ink);
@@ -946,16 +1034,17 @@ MAIN_PAGE_HTML = """
         }
         .drawer-item .itag {
             flex-shrink: 0;
-            font-size: 0.55rem;
+            font-family: var(--mono);
+            font-size: 0.52rem;
             font-weight: 700;
             letter-spacing: 0.06em;
             padding: 0.2rem 0.5rem;
-            border-radius: 999px;
+            border-radius: 4px;
         }
-        .itag.fap { background: rgba(255, 45, 120, 0.14); color: #ff2d78; }
-        .itag.ter { background: rgba(0, 170, 255, 0.14); color: #00aaff; }
+        .itag.fap { background: rgba(255, 214, 10, 0.14); color: #ffd60a; }
+        .itag.ter { background: rgba(0, 168, 255, 0.14); color: #00a8ff; }
         .drawer-item .ititle { font-size: 0.78rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .drawer-item .itime { font-size: 0.62rem; color: var(--ink-3); flex-shrink: 0; }
+        .drawer-item .itime { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-3); flex-shrink: 0; }
         .drawer-empty { font-size: 0.8rem; color: var(--ink-3); text-align: center; padding: 2rem 0; }
 
         .foot {
@@ -963,7 +1052,8 @@ MAIN_PAGE_HTML = """
             z-index: 5;
             text-align: center;
             padding: 0 1rem 1.4rem;
-            font-size: 0.62rem;
+            font-family: var(--mono);
+            font-size: 0.58rem;
             letter-spacing: 0.16em;
             text-transform: uppercase;
             color: var(--ink-3);
@@ -971,20 +1061,20 @@ MAIN_PAGE_HTML = """
 
         @media (max-width: 640px) {
             .topbar { padding: 1rem 1.1rem; }
-            .topbar .brand { font-size: 0.8rem; }
+            .topbar .brand { font-size: 0.82rem; }
             .pill .pdot { display: none; }
             .stage { gap: 1.5rem; padding: 5.5rem 1rem 2rem; }
-            .neon-area { height: clamp(90px, 26vw, 150px); }
+            .holo-area { height: clamp(80px, 24vw, 140px); }
             .deck { padding: 0.4rem 0.4rem 0.4rem 1rem; }
-            .deck-input { font-size: 0.9rem; }
-            .launch-btn { padding: 0.9rem 1.2rem; font-size: 0.7rem; }
-            .hint { gap: 0.7rem; font-size: 0.64rem; }
-            .sign .sign-reflection { display: none; }
+            .deck-input { font-size: 0.8rem; }
+            .launch-btn { padding: 0.9rem 1.2rem; font-size: 0.66rem; }
+            .hint { gap: 0.7rem; }
+            .sign-reflection { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .splash .a18 .l, .splash .s-tag, .splash .s-warn, .enter-btn { animation: none; opacity: 1; transform: none; }
-            .sign .word .l { transition: none; opacity: 1; color: var(--acc); text-shadow: 0 0 12px var(--acc); }
-            .sign-inner, .pill .pdot, .sign .halo, .splash .a18-halo { animation: none; }
+            .splash .a18 .l, .splash .s-tag, .splash .s-warn, .enter-btn { animation: none; opacity: 1; transform: none; filter: none; }
+            .wordmark .word .l { transition: none; opacity: 1; transform: none; filter: none; }
+            .float, .scan, .pill .pdot, .sign .halo, .splash .a18-halo, .hud, .glow { animation: none; }
             .sign { transition: opacity 0.4s var(--ease); }
         }
     </style>
@@ -992,10 +1082,14 @@ MAIN_PAGE_HTML = """
 <body data-platform="faphouse">
 <div class="glow glow-fap"></div>
 <div class="glow glow-ter"></div>
+<div class="grid-bg"></div>
+<canvas id="particles"></canvas>
 <div class="vignette"></div>
+<div class="hud tl"></div><div class="hud tr"></div><div class="hud bl"></div><div class="hud br"></div>
 
 <div class="splash" id="splash">
-    <div class="a18-wrap" id="a18Wrap">
+    <div class="term" id="termLines"><span class="ok">&gt;</span> INITIALIZING THE HOUSE…</div>
+    <div class="a18-wrap">
         <div class="a18-halo"></div>
         <div class="a18" id="a18">18+</div>
     </div>
@@ -1011,30 +1105,51 @@ MAIN_PAGE_HTML = """
         <span class="end">THE HOUSE</span>
     </div>
     <div class="top-right">
-        <div class="pill"><span class="pdot"></span><span id="statusText">Streaming</span></div>
+        <div class="pill"><span class="pdot"></span><span id="statusText">STREAM ONLINE</span></div>
         <div class="pill" id="clockPill"><span id="clockText">--:--:--</span></div>
-        <button class="pill lib-btn" id="libraryBtn">Library <span class="count" id="libraryBadge">0</span></button>
+        <button class="pill lib-btn" id="libraryBtn">LIB <span class="count" id="libraryBadge">0</span></button>
     </div>
 </header>
 
 <main class="stage">
-    <div class="neon-area">
+    <div class="holo-area">
         <div class="sign active in" id="gateFaphouse">
             <div class="halo"></div>
-            <div class="sign-inner">
+            <div class="parallax">
+                <div class="float">
+                    <div class="wordmark" id="wmFaphouse">
+                        <span class="word white">FAP</span>
+                        <span class="word accent">HOUSE</span>
+                        <span class="scan"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="sign-reflection">
                 <span class="word white">FAP</span>
                 <span class="word accent">HOUSE</span>
             </div>
-            <div class="sign-reflection"></div>
         </div>
         <div class="sign down" id="gateTerabox">
             <div class="halo"></div>
-            <div class="sign-inner">
+            <div class="parallax">
+                <div class="float">
+                    <div class="wordmark" id="wmTerabox">
+                        <span class="word white">TERA</span>
+                        <span class="word accent">BOX</span>
+                        <span class="scan"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="sign-reflection">
                 <span class="word white">TERA</span>
                 <span class="word accent">BOX</span>
             </div>
-            <div class="sign-reflection"></div>
         </div>
+    </div>
+
+    <div class="boot" id="bootBar">
+        <span class="boot-label" id="bootLabel">&gt; MOUNTING MODULE…</span>
+        <span class="boot-track"><span class="boot-fill" id="bootFill"></span></span>
     </div>
 
     <div class="tagline">
@@ -1050,7 +1165,7 @@ MAIN_PAGE_HTML = """
 
     <form class="deck" id="urlForm" method="GET" action="/play">
         <span class="deck-prefix" id="deckPrefix">fap://</span>
-        <input class="deck-input" id="videoUrlInput" name="url" type="text" spellcheck="false" autocomplete="off" placeholder="Paste a Faphouse or Terabox link here..." value="{{ video_url or '' }}">
+        <input class="deck-input" id="videoUrlInput" name="url" type="text" spellcheck="false" autocomplete="off" placeholder="Paste a Faphouse or Terabox link here…" value="{{ video_url or '' }}">
         <button type="submit" class="launch-btn" id="loadBtn">Launch</button>
     </form>
 
@@ -1060,6 +1175,8 @@ MAIN_PAGE_HTML = """
         <span><kbd>Enter</kbd> Launch</span>
         <span>Paste a link to auto-switch</span>
     </div>
+
+    <div class="log"><span id="logLine">&gt; MODULE FAPHOUSE — ONLINE</span><span class="cur">▌</span></div>
 </main>
 
 <footer class="foot">Faphouse · The House of Adult Streaming</footer>
@@ -1080,6 +1197,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var enterBtn = document.getElementById('enterBtn');
     var gateFaphouse = document.getElementById('gateFaphouse');
     var gateTerabox = document.getElementById('gateTerabox');
+    var wmFaphouse = document.getElementById('wmFaphouse');
+    var wmTerabox = document.getElementById('wmTerabox');
     var switchBtn = document.getElementById('platformSwitch');
     var switchLabel = document.getElementById('switchLabel');
     var deckPrefix = document.getElementById('deckPrefix');
@@ -1093,10 +1212,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var libraryList = document.getElementById('libraryList');
     var refreshLibraryBtn = document.getElementById('refreshLibraryBtn');
     var scrim = document.getElementById('scrim');
+    var bootBar = document.getElementById('bootBar');
+    var bootLabel = document.getElementById('bootLabel');
+    var logLine = document.getElementById('logLine');
+    var termLines = document.getElementById('termLines');
 
     var currentPlatform = 'faphouse';
 
-    // ===== NEON LETTER BUILD + REFLECTION =====
+    // ===== LETTER BUILD =====
     function splitLetters(root) {
         var words = root.querySelectorAll('.word');
         var idx = 0;
@@ -1106,30 +1229,44 @@ document.addEventListener('DOMContentLoaded', function() {
             for (var i = 0; i < text.length; i++) {
                 var s = document.createElement('span');
                 s.className = 'l';
-                s.style.transitionDelay = (idx * 60) + 'ms';
+                s.style.transitionDelay = (idx * 55) + 'ms';
                 s.textContent = text[i];
                 word.appendChild(s);
                 idx++;
             }
         });
     }
-    function buildReflection(sign) {
-        var inner = sign.querySelector('.sign-inner');
-        var ref = sign.querySelector('.sign-reflection');
-        if (!inner || !ref) return;
-        ref.appendChild(inner.cloneNode(true));
-    }
     splitLetters(gateFaphouse);
     splitLetters(gateTerabox);
-    buildReflection(gateFaphouse);
-    buildReflection(gateTerabox);
+    splitLetters(gateFaphouse.querySelector('.sign-reflection'));
+    splitLetters(gateTerabox.querySelector('.sign-reflection'));
     var a18 = document.getElementById('a18');
     if (a18) splitLetters(a18);
 
-    // ===== SPLASH =====
+    // ===== SPLASH BOOT TYPING =====
+    var bootLines = [
+        { t: '> INITIALIZING THE HOUSE…', ok: false },
+        { t: '> ADULT CONTENT DETECTED', ok: true },
+        { t: '> AGE VERIFICATION REQUIRED', ok: true }
+    ];
+    var li = 0, ci = 0;
+    function typeStep() {
+        if (li >= bootLines.length) { revealSplash(); return; }
+        var line = bootLines[li];
+        ci++;
+        termLines.innerHTML = line.t.slice(0, ci).replace(/>/, '<span class="ok">&gt;</span>');
+        if (ci >= line.t.length) { li++; ci = 0; }
+        setTimeout(typeStep, 26);
+    }
+    function revealSplash() {
+        if (a18) a18.classList.add('in');
+        setTimeout(function() { enterBtn.style.opacity = '1'; }, 400);
+    }
+    setTimeout(typeStep, 300);
+
+    // ===== ENTER =====
     function enterApp() {
         if (splash) splash.classList.add('leave');
-        if (a18) a18.classList.add('in');
         gateFaphouse.classList.add('in');
         setTimeout(function() {
             if (splash) splash.style.display = 'none';
@@ -1148,19 +1285,28 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.dataset.platform = platform;
         deckPrefix.textContent = platform === 'faphouse' ? 'fap://' : 'tera://';
         switchLabel.textContent = platform === 'faphouse' ? 'Terabox' : 'Faphouse';
-        var out, inn;
-        if (platform === 'faphouse') { out = gateTerabox; inn = gateFaphouse; }
-        else { out = gateFaphouse; inn = gateTerabox; }
-        out.classList.add('flicker-off');
-        inn.classList.remove('down');
-        inn.classList.add('active', 'in', 'buzz-on');
+        bootLabel.textContent = '> MOUNTING ' + platform.toUpperCase() + ' MODULE…';
+        logLine.textContent = '> MOUNTING ' + platform.toUpperCase() + ' MODULE…';
+        bootBar.classList.add('run');
+        var out, inn, wmOut, wmIn;
+        if (platform === 'faphouse') { out = gateTerabox; inn = gateFaphouse; wmOut = wmTerabox; wmIn = wmFaphouse; }
+        else { out = gateFaphouse; inn = gateTerabox; wmOut = wmFaphouse; wmIn = wmTerabox; }
+        wmOut.classList.add('glitch');
         setTimeout(function() {
-            out.classList.remove('active', 'in', 'flicker-off');
+            out.classList.remove('active', 'in');
             out.classList.add('down');
-        }, 430);
+            inn.classList.remove('down');
+            inn.classList.add('active', 'in');
+            wmIn.classList.add('glitch');
+            setTimeout(function() {
+                wmIn.classList.remove('glitch');
+                wmOut.classList.remove('glitch');
+            }, 450);
+        }, 420);
         setTimeout(function() {
-            inn.classList.remove('buzz-on');
-        }, 700);
+            bootBar.classList.remove('run');
+            logLine.textContent = '> MODULE ' + platform.toUpperCase() + ' — ONLINE';
+        }, 1500);
     }
 
     gateFaphouse.addEventListener('click', function() { setPlatform('faphouse'); });
@@ -1254,6 +1400,83 @@ document.addEventListener('DOMContentLoaded', function() {
     tick();
     setInterval(tick, 1000);
 
+    // ===== 3D PARALLAX =====
+    var canParallax = false;
+    try {
+        canParallax = window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
+                      !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {}
+    if (canParallax) {
+        var pWrap = [gateFaphouse.querySelector('.parallax'), gateTerabox.querySelector('.parallax')];
+        var tx = 0, ty = 0, cx = 0, cy = 0;
+        document.addEventListener('mousemove', function(e) {
+            tx = (e.clientX / window.innerWidth - 0.5);
+            ty = (e.clientY / window.innerHeight - 0.5);
+        });
+        function pLoop() {
+            cx += (tx - cx) * 0.07;
+            cy += (ty - cy) * 0.07;
+            var rx = -cy * 7;
+            var ry = cx * 10;
+            pWrap.forEach(function(el) {
+                el.style.transform = 'rotateX(' + rx + 'deg) rotateY(' + ry + 'deg)';
+            });
+            requestAnimationFrame(pLoop);
+        }
+        pLoop();
+    }
+
+    // ===== PARTICLES =====
+    var reduce = false;
+    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    if (!reduce) {
+        var canvas = document.getElementById('particles');
+        var ctx = null;
+        try { ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null; } catch (e) {}
+        if (!ctx) { /* particles unavailable */ }
+        else {
+            var W, H, parts = [];
+        function sizeCanvas() {
+            W = window.innerWidth; H = window.innerHeight;
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = W * dpr; canvas.height = H * dpr;
+            canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        function seedParts() {
+            parts = [];
+            var n = Math.min(46, Math.floor(W / 26));
+            for (var i = 0; i < n; i++) {
+                parts.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    r: Math.random() * 1.5 + 0.4,
+                    vy: -(Math.random() * 0.3 + 0.06),
+                    vx: (Math.random() - 0.5) * 0.12,
+                    a: Math.random() * 0.35 + 0.12
+                });
+            }
+        }
+        function drawParticles() {
+            ctx.clearRect(0, 0, W, H);
+            for (var i = 0; i < parts.length; i++) {
+                var p = parts[i];
+                p.y += p.vy; p.x += p.vx;
+                if (p.y < -4) { p.y = H + 4; p.x = Math.random() * W; }
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+                ctx.fillStyle = 'rgba(255,255,255,' + p.a + ')';
+                ctx.fill();
+            }
+            requestAnimationFrame(drawParticles);
+        }
+        sizeCanvas();
+        seedParts();
+        drawParticles();
+        window.addEventListener('resize', function() { sizeCanvas(); seedParts(); });
+        }
+    }
+
     // ===== KEYBOARD =====
     document.addEventListener('keydown', function(e) {
         if (e.key === 'f' || e.key === 'F') setPlatform('faphouse');
@@ -1274,15 +1497,15 @@ PLAYER_PAGE_HTML = r"""
     <title>Faphouse · The House</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://vjs.zencdn.net/8.0.0/video-js.css" rel="stylesheet" />
     <style>
         :root {
-            --bg: #050506;
+            --bg: #07070a;
             --ink: #f5f5f7;
             --ink-2: #9a9aa3;
-            --acc: #ff2d78;
-            --acc-rgb: 255, 45, 120;
+            --acc: #ffd60a;
+            --acc-rgb: 255, 214, 10;
             --line: rgba(255, 255, 255, 0.1);
             --ease: cubic-bezier(0.16, 1, 0.3, 1);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1374,25 +1597,23 @@ PLAYER_PAGE_HTML = r"""
             border-radius: 999px;
             padding: 0.34rem 0.85rem;
         }
-        .header-brand .word {
-            font-family: "Space Grotesk", sans-serif;
+        .header-brand .word { font-family: "Orbitron", sans-serif;
             font-weight: 800;
             font-size: 0.66rem;
             letter-spacing: 0.02em;
             color: #fff;
         }
-        .header-brand .dot { color: var(--acc); text-shadow: 0 0 10px var(--acc); }
-        .header-badge {
+        .header-brand .dot { color: var(--acc); text-shadow: 0 0 12px rgba(255,214,10,0.6); }
+        .header-badge { font-family: "Orbitron", sans-serif;
             font-size: 0.55rem;
             font-weight: 800;
             color: #0a0a0b;
             background: var(--acc);
             border-radius: 999px;
             padding: 0.12rem 0.4rem;
-            font-family: "Space Grotesk", sans-serif;
         }
         .header-right { display: flex; align-items: center; gap: 0.5rem; }
-        .quality-badge {
+        .quality-badge { font-family: "Orbitron", sans-serif;
             font-size: 0.55rem;
             font-weight: 700;
             letter-spacing: 0.1em;
@@ -1575,7 +1796,7 @@ PLAYER_PAGE_HTML = r"""
         @media (hover: hover) and (pointer: fine) {
             .controls-row .seek-btn:hover { color: var(--acc); background: rgba(255,255,255,0.1); }
         }
-        .controls-row .time-display {
+        .controls-row .time-display { font-family: "JetBrains Mono", monospace;
             font-size: 0.62rem;
             font-weight: 500;
             color: rgba(255,255,255,0.9);
@@ -1695,8 +1916,7 @@ PLAYER_PAGE_HTML = r"""
             animation-delay: 300ms;
         }
         @keyframes metaIn { to { opacity: 1; transform: translateY(0); } }
-        .meta-title {
-            font-family: "Space Grotesk", sans-serif;
+        .meta-title { font-family: "Orbitron", sans-serif;
             font-weight: 700;
             font-size: clamp(0.82rem, 2vw, 1rem);
             letter-spacing: 0.01em;
@@ -1706,7 +1926,7 @@ PLAYER_PAGE_HTML = r"""
             text-overflow: ellipsis;
             max-width: 60%;
         }
-        .meta-title .a { color: var(--acc); text-shadow: 0 0 12px var(--acc); }
+        .meta-title .a { color: var(--acc); text-shadow: 0 0 14px rgba(255,214,10,0.6); }
         .meta-caption {
             font-size: 0.68rem;
             font-weight: 400;
@@ -1714,7 +1934,7 @@ PLAYER_PAGE_HTML = r"""
             margin-top: 0.25rem;
         }
         .meta-actions { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
-        .meta-btn {
+        .meta-btn { font-family: "Orbitron", sans-serif;
             background: var(--acc);
             color: #0a0a0b;
             border: none;
@@ -1763,7 +1983,7 @@ PLAYER_PAGE_HTML = r"""
             .app { padding: 0.7rem; gap: 0.9rem; }
             .video-wrapper { width: 100%; border-radius: 18px; }
             .header { padding: 0.7rem 0.8rem; }
-            .header-brand .word { font-size: 0.6rem; }
+            .header-brand .word { font-family: "Orbitron", sans-serif; font-size: 0.6rem; }
             .header-status { display: none; }
             .controls-wrapper { padding: 0.8rem 0.8rem 0.7rem 0.8rem; }
             .controls-row button { font-size: 0.6rem; min-height: 30px; }
@@ -1772,19 +1992,19 @@ PLAYER_PAGE_HTML = r"""
             .controls-row .vol-btn { width: 32px; height: 32px; min-height: 32px; }
             .controls-row .icon-btn { width: 32px; height: 32px; }
             .vol-slider { width: 56px; }
-            .controls-row .time-display { font-size: 0.56rem; min-width: 66px; }
+            .controls-row .time-display { font-family: "JetBrains Mono", monospace; font-size: 0.56rem; min-width: 66px; }
             .center-play { width: 56px; height: 56px; }
             .center-play svg { width: 22px; height: 22px; }
             .meta { width: 100%; flex-direction: column; align-items: flex-start; gap: 0.6rem; }
-            .meta-title { max-width: 100%; }
+            .meta-title { font-family: "Orbitron", sans-serif; max-width: 100%; }
             .meta-actions { width: 100%; }
-            .meta-btn { flex: 1; text-align: center; }
+            .meta-btn { font-family: "Orbitron", sans-serif; flex: 1; text-align: center; }
             .save-toast { bottom: 20px; }
         }
         @media (max-width: 450px) {
-            .controls-row .time-display { font-size: 0.52rem; min-width: 60px; }
+            .controls-row .time-display { font-family: "JetBrains Mono", monospace; font-size: 0.52rem; min-width: 60px; }
             .vol-slider { width: 40px; }
-            .quality-badge { display: none; }
+            .quality-badge { font-family: "Orbitron", sans-serif; display: none; }
         }
         @media (orientation: landscape) and (max-height: 520px) {
             .app { gap: 0.6rem; padding: 0.6rem; }
