@@ -400,1121 +400,1114 @@ MAIN_PAGE_HTML = """
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Faphouse · The House</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Faphouse · Terabox Player</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #07070a;
-            --panel: #0e0e13;
-            --panel-2: #16161d;
-            --line: rgba(255, 255, 255, 0.08);
-            --line-strong: rgba(255, 255, 255, 0.16);
-            --ink: #f5f5f7;
-            --ink-2: #9a9aa3;
-            --ink-3: #55555f;
-            --fap: #ffd60a;
-            --ter: #00a8ff;
-            --acc: var(--fap);
-            --acc-rgb: 255, 214, 10;
-            --ease: cubic-bezier(0.16, 1, 0.3, 1);
-            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-            --mono: "JetBrains Mono", monospace;
-            --disp: "Orbitron", sans-serif;
-            --body: "Space Grotesk", sans-serif;
-        }
-        body[data-platform="terabox"] {
-            --acc: var(--ter);
-            --acc-rgb: 0, 168, 255;
-        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            background: var(--bg);
-            color: var(--ink);
-            font-family: var(--body);
-            min-height: 100vh;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-        ::selection { background: var(--acc); color: #07070a; }
-
-        /* ===== BACKGROUND LAYERS ===== */
-        .glow {
-            position: fixed;
-            width: 65vmax;
-            height: 65vmax;
-            border-radius: 50%;
-            filter: blur(90px);
-            opacity: 0.12;
-            pointer-events: none;
-            z-index: 0;
-            transition: opacity 0.8s var(--ease);
-        }
-        .glow-fap { background: radial-gradient(circle, rgba(255, 214, 10, 0.85), transparent 62%); top: -30%; left: 50%; transform: translateX(-50%); }
-        .glow-ter { background: radial-gradient(circle, rgba(0, 168, 255, 0.85), transparent 62%); bottom: -32%; right: -14%; }
-        body[data-platform="faphouse"] .glow-ter { opacity: 0; }
-        body[data-platform="terabox"] .glow-fap { opacity: 0; }
-        .grid-bg {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-            background-size: 34px 34px;
-            -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
-            mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
-        }
-        #particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
-        .vignette {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 1;
-            background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.6) 100%);
-        }
-
-        /* ===== HUD CORNERS ===== */
-        .hud {
-            position: fixed;
-            width: 26px;
-            height: 26px;
-            z-index: 30;
-            pointer-events: none;
-            opacity: 0.4;
-            transition: border-color 0.6s var(--ease);
-            animation: hudPulse 5s ease-in-out infinite;
-        }
-        .hud.tl { top: 14px; left: 14px; border-top: 2px solid var(--acc); border-left: 2px solid var(--acc); border-top-left-radius: 8px; }
-        .hud.tr { top: 14px; right: 14px; border-top: 2px solid var(--acc); border-right: 2px solid var(--acc); border-top-right-radius: 8px; }
-        .hud.bl { bottom: 14px; left: 14px; border-bottom: 2px solid var(--acc); border-left: 2px solid var(--acc); border-bottom-left-radius: 8px; }
-        .hud.br { bottom: 14px; right: 14px; border-bottom: 2px solid var(--acc); border-right: 2px solid var(--acc); border-bottom-right-radius: 8px; }
-        @keyframes hudPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.55; } }
-
-        /* ===== SPLASH / BOOT ===== */
-        .splash {
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1.6rem;
-            text-align: center;
-            padding: 2rem;
-            transition: opacity 0.6s var(--ease), transform 0.8s var(--ease), filter 0.6s var(--ease);
-        }
-        .splash.leave { opacity: 0; transform: scale(1.06); filter: blur(10px); pointer-events: none; }
-        .splash .term {
-            font-family: var(--mono);
-            font-size: 0.82rem;
-            line-height: 1.9;
-            color: var(--ink-2);
-            min-height: 3.8rem;
-            letter-spacing: 0.02em;
-        }
-        .splash .term .ok { color: var(--acc); }
-        .splash .a18-wrap { position: relative; display: flex; }
-        .splash .a18-halo {
-            position: absolute;
-            inset: -40% -15%;
-            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.16), transparent 70%);
-            filter: blur(36px);
-            animation: breath 3.4s ease-in-out infinite;
-            transition: background 0.6s var(--ease);
-        }
-        @keyframes breath { 0%, 100% { opacity: 0.7; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1.04); } }
-        .splash .a18 {
-            position: relative;
-            font-family: var(--disp);
-            font-weight: 900;
-            font-size: clamp(5.5rem, 22vw, 12rem);
-            line-height: 1;
-            letter-spacing: 0.04em;
-            display: flex;
-        }
-        .splash .a18 .l {
-            opacity: 0;
-            transform: translateY(24px);
-            filter: blur(10px);
-            color: #fff;
-            text-shadow: 0 0 24px rgba(var(--acc-rgb), 0.45);
-            transition: opacity 0.5s var(--ease), transform 0.6s var(--spring), filter 0.5s var(--ease);
-        }
-        .splash .a18.in .l { opacity: 1; transform: none; filter: none; }
-        .splash .s-tag {
-            font-family: var(--disp);
-            font-size: 0.66rem;
-            font-weight: 700;
-            letter-spacing: 0.5em;
-            text-transform: uppercase;
-            color: var(--ink-2);
-            opacity: 0;
-            animation: fadeUp 0.7s var(--ease) forwards;
-            animation-delay: 0.9s;
-        }
-        .splash .s-warn {
-            font-size: 0.8rem;
-            line-height: 1.7;
-            color: var(--ink-3);
-            max-width: 380px;
-            opacity: 0;
-            animation: fadeUp 0.7s var(--ease) forwards;
-            animation-delay: 1.05s;
-        }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-        .enter-btn {
-            margin-top: 0.6rem;
-            font-family: var(--disp);
-            font-weight: 700;
-            font-size: 0.72rem;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            color: #07070a;
-            background: var(--acc);
-            border: none;
-            border-radius: 10px;
-            padding: 1rem 2.8rem;
-            cursor: pointer;
-            box-shadow: 0 8px 34px rgba(var(--acc-rgb), 0.4);
-            transition: transform 0.3s var(--spring), box-shadow 0.4s var(--ease), background 0.5s var(--ease);
-            opacity: 0;
-            animation: fadeUp 0.7s var(--ease) forwards;
-            animation-delay: 1.2s;
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .enter-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 50px rgba(var(--acc-rgb), 0.6); }
-        }
-        .enter-btn:active { transform: scale(0.95); }
-        .splash .s-foot {
-            position: absolute;
-            bottom: 1.6rem;
-            font-family: var(--mono);
-            font-size: 0.6rem;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--ink-3);
-        }
-
-        /* ===== TOP BAR ===== */
-        .topbar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 20;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.2rem 2rem;
-            pointer-events: none;
-        }
-        .brand {
-            font-family: var(--disp);
-            font-weight: 800;
-            font-size: 0.92rem;
-            letter-spacing: 0.05em;
-            display: flex;
-            align-items: baseline;
-        }
-        .brand .w { color: #fff; }
-        .brand .a {
-            color: var(--acc);
-            text-shadow: 0 0 14px rgba(var(--acc-rgb), 0.5);
-            transition: color 0.6s var(--ease), text-shadow 0.6s var(--ease);
-        }
-        .brand .end { font-family: var(--mono); color: var(--ink-3); font-weight: 400; font-size: 0.62rem; margin-left: 0.6rem; letter-spacing: 0.12em; }
-        .top-right { display: flex; align-items: center; gap: 0.7rem; pointer-events: auto; }
-        .pill {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--line-strong);
-            border-radius: 8px;
-            padding: 0.48rem 0.9rem;
-            font-family: var(--mono);
-            font-size: 0.64rem;
-            font-weight: 500;
-            color: var(--ink-2);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            transition: border-color 0.4s var(--ease), color 0.4s var(--ease);
-        }
-        .pill .pdot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--acc);
-            box-shadow: 0 0 10px var(--acc);
-            animation: pulse 1.6s ease-in-out infinite;
-            transition: background 0.5s var(--ease);
-        }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        .lib-btn { cursor: pointer; }
-        .lib-btn .count {
-            background: var(--acc);
-            color: #07070a;
-            border-radius: 6px;
-            font-size: 0.6rem;
-            font-weight: 700;
-            padding: 0.1rem 0.42rem;
-            transition: background 0.5s var(--ease);
-        }
-
-        /* ===== STAGE ===== */
-        .stage {
-            position: relative;
-            z-index: 5;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 6.5rem 1.5rem 3rem;
-            gap: 1.7rem;
-        }
-
-        /* ===== HOLOGRAM SIGN ===== */
-        .holo-area {
-            position: relative;
-            width: 100%;
-            height: clamp(120px, 20vw, 185px);
+        body {
+            background: #000000;
+            font-family: "Unbounded", sans-serif;
+            color: #f5f0e6;
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        .sign {
-            position: absolute;
-            inset: 0;
-            margin: auto;
-            width: max-content;
-            height: max-content;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            user-select: none;
-            opacity: 0;
-            transition: transform 0.9s var(--spring), opacity 0.5s var(--ease);
-            will-change: transform;
-        }
-        .sign.active { opacity: 1; }
-        .sign.down { transform: translateY(135%) scale(0.94); opacity: 0; pointer-events: none; }
-        .sign .halo {
-            position: absolute;
-            inset: -45% -10%;
-            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.12), transparent 70%);
-            filter: blur(34px);
-            animation: breath 4s ease-in-out infinite;
-            transition: background 0.6s var(--ease);
-            pointer-events: none;
-        }
-        .parallax { transform-style: preserve-3d; will-change: transform; }
-        .float { animation: floatBob 6s ease-in-out infinite; will-change: transform; }
-        @keyframes floatBob {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-9px); }
-        }
-        .wordmark {
-            position: relative;
-            font-family: var(--disp);
-            font-weight: 900;
-            font-size: clamp(2.3rem, 8.8vw, 6rem);
-            line-height: 1;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .wordmark.glitch { animation: holoGlitch 0.4s steps(2, end); }
-        @keyframes holoGlitch {
-            0% { clip-path: inset(0 0 0 0); transform: translate(0); }
-            20% { clip-path: inset(8% 0 62% 0); transform: translate(-8px, 2px); }
-            40% { clip-path: inset(55% 0 12% 0); transform: translate(6px, -2px); }
-            60% { clip-path: inset(28% 0 46% 0); transform: translate(-5px, 1px); }
-            80% { clip-path: inset(70% 0 4% 0); transform: translate(7px, -1px); }
-            100% { clip-path: inset(0 0 0 0); transform: translate(0); }
-        }
-        .wordmark .word { display: inline-flex; }
-        .wordmark .word .l {
-            display: inline-block;
-            opacity: 0;
-            transform: translateY(26px);
-            filter: blur(8px);
-            transition: opacity 0.45s var(--ease), transform 0.6s var(--spring), filter 0.45s var(--ease);
-        }
-        .wordmark.in .word .l { opacity: 1; transform: none; filter: none; }
-        .word.white .l { color: #f5f5f7; text-shadow: 0 0 18px rgba(255, 255, 255, 0.25); }
-        .word.accent .l { color: var(--acc); text-shadow: 0 0 20px rgba(var(--acc-rgb), 0.45); }
-        .wordmark .scan {
-            position: absolute;
-            left: -6%;
-            right: -6%;
-            height: 34%;
-            top: -12%;
-            background: linear-gradient(180deg, transparent, rgba(var(--acc-rgb), 0.12), transparent);
-            animation: scanSweep 5s ease-in-out infinite;
-            pointer-events: none;
-            mix-blend-mode: screen;
-        }
-        @keyframes scanSweep {
-            0% { top: -20%; opacity: 0; }
-            8% { opacity: 1; }
-            48% { opacity: 1; }
-            58% { opacity: 0; }
-            100% { top: 110%; opacity: 0; }
-        }
-        .sign-reflection {
-            position: absolute;
-            top: 103%;
-            left: 0;
-            right: 0;
-            transform: scaleY(-1);
-            opacity: 0.12;
-            filter: blur(2px);
-            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent 70%);
-            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent 70%);
-            pointer-events: none;
-        }
-        .sign-reflection .l { opacity: 0.5 !important; transition: none !important; filter: none !important; }
-        .sign-reflection .word.white .l { color: #888; text-shadow: none; }
-        .sign-reflection .word.accent .l { color: var(--acc); text-shadow: none; }
-
-        /* ===== BOOT BAR ===== */
-        .boot {
-            width: min(460px, 86vw);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            min-height: 2.6rem;
-            opacity: 0;
-            transition: opacity 0.3s var(--ease);
-        }
-        .boot.run { opacity: 1; }
-        .boot-label {
-            font-family: var(--mono);
-            font-size: 0.64rem;
-            color: var(--ink-2);
-            letter-spacing: 0.06em;
-        }
-        .boot-track {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 3px;
+            padding: 0;
+            margin: 0;
             overflow: hidden;
         }
-        .boot-fill {
-            display: block;
-            width: 0%;
-            height: 100%;
-            background: var(--acc);
-            box-shadow: 0 0 12px rgba(var(--acc-rgb), 0.8);
-            border-radius: 3px;
-            transition: background 0.5s var(--ease);
-        }
-        .boot.run .boot-fill { animation: bootFill 1.05s var(--ease) forwards; }
-        @keyframes bootFill { from { width: 0%; } to { width: 100%; } }
-
-        /* ===== TAGLINE ===== */
-        .tagline {
+        .app {
+            width: 100%;
+            height: 100vh;
             position: relative;
-            height: 1.4rem;
-            font-family: var(--disp);
-            font-size: 0.62rem;
-            font-weight: 700;
-            letter-spacing: 0.5em;
-            text-transform: uppercase;
-            color: var(--ink-2);
-            text-align: center;
+            overflow: hidden;
+            background: #000000;
         }
-        .tagline > span { position: absolute; inset: 0; transition: opacity 0.45s var(--ease); opacity: 0; }
-        body[data-platform="faphouse"] .tagline .tag-fap { opacity: 1; }
-        body[data-platform="terabox"] .tagline .tag-ter { opacity: 1; }
-
-        /* ===== SWITCH BUTTON ===== */
-        .switch-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.55rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--line-strong);
-            color: var(--ink-2);
-            border-radius: 8px;
-            padding: 0.5rem 1.15rem;
-            font-family: var(--mono);
-            font-size: 0.7rem;
-            font-weight: 500;
-            cursor: pointer;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            transition: border-color 0.4s var(--ease), color 0.4s var(--ease), transform 0.3s var(--spring), box-shadow 0.5s var(--ease);
-            touch-action: manipulation;
-        }
-        .switch-btn .sdot {
-            width: 8px;
-            height: 8px;
-            border-radius: 2px;
-            background: var(--acc);
-            box-shadow: 0 0 12px var(--acc);
-            transform: rotate(45deg);
-            transition: background 0.5s var(--ease);
-        }
-        .switch-btn .arrow { transition: transform 0.4s var(--ease); font-size: 0.85rem; }
-        @media (hover: hover) and (pointer: fine) {
-            .switch-btn:hover { border-color: var(--acc); color: #fff; box-shadow: 0 0 24px rgba(var(--acc-rgb), 0.2); }
-            .switch-btn:hover .arrow { transform: translateY(3px); }
-        }
-        .switch-btn:active { transform: scale(0.95); }
-
-        /* ===== DECK / URL PASTER ===== */
-        .deck {
-            width: min(680px, 94vw);
-            display: flex;
-            align-items: center;
-            background: var(--panel);
-            border: 1px solid var(--line-strong);
-            border-radius: 12px;
-            padding: 0.45rem 0.45rem 0.45rem 1.2rem;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            transition: border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
-        }
-        .deck:focus-within {
-            border-color: var(--acc);
-            box-shadow: 0 0 0 3px rgba(var(--acc-rgb), 0.12), 0 0 26px rgba(var(--acc-rgb), 0.14), 0 24px 70px rgba(0, 0, 0, 0.55);
-        }
-        .deck-prefix {
-            font-family: var(--mono);
-            font-weight: 700;
-            font-size: 0.74rem;
-            color: var(--acc);
-            text-shadow: 0 0 10px rgba(var(--acc-rgb), 0.6);
-            white-space: nowrap;
-            transition: color 0.5s var(--ease);
-        }
-        .deck-input {
-            flex: 1;
-            min-width: 0;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #fff;
-            font-family: var(--mono);
-            font-size: 0.88rem;
-            padding: 0.85rem 0.8rem;
-        }
-        .deck-input::placeholder { color: var(--ink-3); }
-        .launch-btn {
-            background: var(--acc);
-            color: #07070a;
-            border: none;
-            border-radius: 9px;
-            padding: 0.95rem 1.7rem;
-            font-family: var(--disp);
-            font-weight: 800;
-            font-size: 0.7rem;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            cursor: pointer;
-            white-space: nowrap;
-            box-shadow: 0 0 20px rgba(var(--acc-rgb), 0.4);
-            transition: transform 0.3s var(--spring), background 0.5s var(--ease), box-shadow 0.5s var(--ease), opacity 0.4s var(--ease);
-            touch-action: manipulation;
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .launch-btn:hover { transform: translateY(-1px); box-shadow: 0 0 38px rgba(var(--acc-rgb), 0.6); }
-        }
-        .launch-btn:active { transform: scale(0.95); }
-        .launch-btn.loading { opacity: 0.55; pointer-events: none; animation: loadPulse 0.9s ease-in-out infinite; }
-        @keyframes loadPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.9; } }
-
-        .hint {
-            display: flex;
-            align-items: center;
-            gap: 1.1rem;
-            font-family: var(--mono);
-            font-size: 0.64rem;
-            color: var(--ink-3);
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .hint kbd {
-            background: var(--panel-2);
-            border: 1px solid var(--line-strong);
-            border-radius: 4px;
-            padding: 0.1rem 0.4rem;
-            font-size: 0.6rem;
-            color: var(--ink-2);
-            font-family: inherit;
-        }
-
-        .log {
-            font-family: var(--mono);
-            font-size: 0.66rem;
-            color: var(--ink-3);
-            letter-spacing: 0.04em;
-        }
-        .log .cur { color: var(--acc); animation: blink 1s steps(1) infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-
-        /* ===== LIBRARY DRAWER ===== */
-        .scrim {
+        .splash-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #000000;
+            transition: opacity 1.2s ease, visibility 1.2s ease;
+        }
+        .splash-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .splash-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2.5rem;
+        }
+        .splash-18 {
+            font-family: "Unbounded", sans-serif;
+            font-size: 8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #f5c518, #d4a800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            text-shadow: 0 0 80px rgba(245,197,24,0.05);
+        }
+        .splash-18 span {
+            font-size: 3rem;
+            display: block;
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            -webkit-text-fill-color: #3d3930;
+            background: none;
+            margin-top: 0.5rem;
+        }
+        .splash-btn {
+            background: transparent;
+            border: 2px solid rgba(245,197,24,0.1);
+            padding: 0.8rem 3.5rem;
+            font-family: "Unbounded", sans-serif;
+            font-size: 0.7rem;
+            color: #8a8477;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            border-radius: 60px;
+        }
+        .splash-btn:hover {
+            border-color: rgba(245,197,24,0.2);
+            color: #f5f0e6;
+            transform: scale(0.97);
+        }
+        .splash-sub {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+            color: #1a1814;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+        .page-paste {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+            padding: 2rem;
+        }
+        .page-paste.visible { opacity: 1; }
+        .bg-glow {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 40%, rgba(245,197,24,0.02), transparent 70%);
+            pointer-events: none;
+            transition: background 0.6s ease;
+        }
+        .bg-glow.terabox-glow {
+            background: radial-gradient(ellipse at 50% 40%, rgba(0,180,216,0.02), transparent 70%);
+        }
+        .bg-grid {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,215,0,0.008) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,215,0,0.008) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            transition: background-image 0.6s ease;
+        }
+        .bg-grid.terabox-grid {
+            background-image: 
+                linear-gradient(rgba(0,180,216,0.008) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,180,216,0.008) 1px, transparent 1px);
+        }
+        .brand-container {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+            min-height: 120px;
+        }
+        .logo-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 80px;
+        }
+        .logo-faphouse {
+            display: flex;
+            align-items: baseline;
+            gap: 0.1rem;
+            font-family: "Unbounded", sans-serif;
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.8) rotate(-3deg);
+            pointer-events: none;
+        }
+        .logo-faphouse.active {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            pointer-events: auto;
+            position: relative;
+        }
+        .logo-faphouse.hidden {
+            opacity: 0;
+            transform: scale(0.8) rotate(3deg);
+            pointer-events: none;
+            position: absolute;
+        }
+        .logo-faphouse .fap {
+            background: linear-gradient(135deg, #f5c518, #d4a800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+            animation: fapPulse 3s ease-in-out infinite;
+        }
+        @keyframes fapPulse {
+            0%, 100% { filter: blur(0px); text-shadow: 0 0 40px rgba(245,197,24,0.03); transform: scale(1); }
+            30% { filter: blur(5px); text-shadow: 0 0 60px rgba(245,197,24,0.08); transform: scale(1.02); }
+            50% { filter: blur(0px); text-shadow: 0 0 40px rgba(245,197,24,0.03); transform: scale(1); }
+            80% { filter: blur(5px); text-shadow: 0 0 60px rgba(245,197,24,0.08); transform: scale(1.02); }
+        }
+        .logo-faphouse .house {
+            color: #f5f0e6;
+            -webkit-text-fill-color: #f5f0e6;
+            display: inline-block;
+        }
+        .logo-terabox {
+            display: flex;
+            align-items: baseline;
+            gap: 0.1rem;
+            font-family: "Unbounded", sans-serif;
+            font-size: 4.2rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.8) rotate(3deg);
+            pointer-events: none;
+        }
+        .logo-terabox.active {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            pointer-events: auto;
+            position: relative;
+        }
+        .logo-terabox.hidden {
+            opacity: 0;
+            transform: scale(0.8) rotate(-3deg);
+            pointer-events: none;
+            position: absolute;
+        }
+        .logo-terabox .tera {
+            background: linear-gradient(135deg, #00b4d8, #0077b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+        }
+        .logo-terabox .box-text {
+            color: #f5f0e6;
+            -webkit-text-fill-color: #f5f0e6;
+            display: inline-block;
+            animation: teraPulse 3.2s ease-in-out infinite;
+        }
+        @keyframes teraPulse {
+            0%, 100% { filter: blur(0px); text-shadow: 0 0 40px rgba(0,180,216,0.03); transform: scale(1); }
+            25% { filter: blur(4px); text-shadow: 0 0 60px rgba(0,180,216,0.08); transform: scale(0.9) rotate(-2deg); }
+            45% { filter: blur(0px); text-shadow: 0 0 40px rgba(0,180,216,0.03); transform: scale(1.05) rotate(1deg); }
+            65% { filter: blur(4px); text-shadow: 0 0 60px rgba(0,180,216,0.08); transform: scale(0.85) rotate(2deg); }
+            85% { filter: blur(0px); text-shadow: 0 0 40px rgba(0,180,216,0.03); transform: scale(1) rotate(0deg); }
+        }
+        .badge-18 {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #f5c518;
+            background: rgba(245,197,24,0.04);
+            border: 1px solid rgba(245,197,24,0.06);
+            padding: 0.05rem 0.5rem;
+            border-radius: 20px;
+            display: inline-block;
+            margin-left: 0.3rem;
+            vertical-align: middle;
+            -webkit-text-fill-color: #f5c518;
+            letter-spacing: 0.05em;
+            transition: all 0.6s ease;
+        }
+        .badge-18.terabox-badge {
+            color: #00b4d8;
+            border-color: rgba(0,180,216,0.06);
+            -webkit-text-fill-color: #00b4d8;
+            background: rgba(0,180,216,0.04);
+        }
+        .brand-tagline {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.55rem;
+            color: #3d3930;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-top: 0.8rem;
+            transition: color 0.6s ease;
+        }
+        .brand-tagline.terabox-tagline { color: #1a3a4a; }
+        .platform-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+            justify-content: center;
+            background: rgba(255,255,255,0.01);
+            padding: 0.3rem;
+            border-radius: 60px;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+        .platform-selector .pill {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 1.8rem;
+            border-radius: 60px;
+            font-family: "Unbounded", sans-serif;
+            font-size: 0.6rem;
+            color: #3d3930;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            position: relative;
+        }
+        .platform-selector .pill:hover { color: #8a8477; }
+        .platform-selector .pill.active-faphouse {
+            color: #f5c518;
+            background: rgba(245,197,24,0.06);
+        }
+        .platform-selector .pill.active-terabox {
+            color: #00b4d8;
+            background: rgba(0,180,216,0.06);
+        }
+        .platform-selector .pill::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 60%;
+            height: 2px;
+            border-radius: 2px;
+            transition: transform 0.4s ease;
+        }
+        .platform-selector .pill.active-faphouse::after {
+            background: #f5c518;
+            transform: translateX(-50%) scaleX(1);
+        }
+        .platform-selector .pill.active-terabox::after {
+            background: #00b4d8;
+            transform: translateX(-50%) scaleX(1);
+        }
+        .input-area {
+            width: 100%;
+            max-width: 720px;
+            position: relative;
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(8,8,8,0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 80px;
+            padding: 0.2rem 0.2rem 0.2rem 2rem;
+            border: 1px solid rgba(255,215,0,0.03);
+            transition: all 0.4s ease;
+        }
+        .input-wrapper:focus-within { border-color: rgba(255,215,0,0.06); }
+        .input-wrapper.terabox-mode { border-color: rgba(0,180,216,0.03); }
+        .input-wrapper.terabox-mode:focus-within { border-color: rgba(0,180,216,0.06); }
+        .input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 1rem 0.5rem 1rem 0;
+            font-size: 0.8rem;
+            font-family: "JetBrains Mono", monospace;
+            color: #ece4d6;
+            outline: none;
+            font-weight: 300;
+            min-width: 0;
+        }
+        .input-wrapper input::placeholder { color: #3a362e; font-weight: 200; }
+        .input-wrapper .btn-load {
+            background: #f5c518;
+            border: none;
+            padding: 0.8rem 2.5rem;
+            border-radius: 60px;
+            font-family: "Unbounded", sans-serif;
+            font-weight: 700;
+            font-size: 0.65rem;
+            color: #000000;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .input-wrapper .btn-load:hover { transform: scale(0.96); }
+        .input-wrapper .btn-load:active { transform: scale(0.92); }
+        .input-wrapper .btn-load.terabox-mode {
+            background: #00b4d8;
+        }
+        .input-wrapper .btn-load.terabox-mode:hover {
+            background: #48cae4;
+        }
+        .input-example {
+            margin-top: 1rem;
+            text-align: center;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+            color: #3a362e;
+        }
+        .input-example .example-link {
+            color: #6b6558;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            border-bottom: 1px solid rgba(255,215,0,0.02);
+        }
+        .input-example .example-link:hover { color: #c4bbaa; }
+        .input-example .example-link.terabox-example {
+            color: #0077b6;
+        }
+        .input-example .example-link.terabox-example:hover {
+            color: #00b4d8;
+        }
+        .input-example .sep-dot { color: #1a1814; padding: 0 0.5rem; }
+        
+        /* Library Button */
+        .library-toggle-btn {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 50;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(255,255,255,0.02);
+            color: #3d3930;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+        }
+        .library-toggle-btn:hover {
+            background: rgba(255,255,255,0.02);
+            border-color: rgba(255,215,0,0.05);
+        }
+        .library-toggle-btn .bar {
+            width: 20px;
+            height: 2px;
+            background: #3d3930;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        .library-toggle-btn .bar:nth-child(2) { width: 14px; }
+        .library-toggle-btn .bar:nth-child(3) { width: 18px; }
+        .library-toggle-btn .badge-count {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: rgba(245,197,24,0.1);
+            color: #f5c518;
+            font-size: 0.4rem;
+            padding: 0.05rem 0.35rem;
+            border-radius: 10px;
+            border: 1px solid rgba(245,197,24,0.04);
+            font-family: "JetBrains Mono", monospace;
+            min-width: 16px;
+            text-align: center;
+        }
+        .library-toggle-btn.terabox-mode .badge-count {
+            color: #00b4d8;
+            border-color: rgba(0,180,216,0.04);
+        }
+        
+        /* Library Sidebar */
+        .library-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100vh;
+            background: rgba(8,8,8,0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255,255,255,0.02);
+            z-index: 60;
+            transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .library-sidebar.open {
+            right: 0;
+        }
+        .library-sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
             z-index: 55;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.45s var(--ease);
+            transition: opacity 0.3s ease;
         }
-        .scrim.open { opacity: 1; pointer-events: auto; }
-        .drawer {
-            position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: min(400px, 92vw);
-            background: rgba(10, 10, 15, 0.92);
-            backdrop-filter: blur(26px);
-            -webkit-backdrop-filter: blur(26px);
-            border-left: 1px solid var(--line-strong);
-            transform: translateX(103%);
-            transition: transform 0.55s var(--spring);
-            z-index: 60;
-            display: flex;
-            flex-direction: column;
-            padding: 1.5rem;
+        .library-sidebar-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
         }
-        .drawer.open { transform: none; }
-        .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
-        .drawer-title { font-family: var(--disp); font-weight: 800; font-size: 0.8rem; letter-spacing: 0.08em; }
-        .drawer-title .a { color: var(--acc); text-shadow: 0 0 12px rgba(var(--acc-rgb), 0.6); transition: color 0.5s var(--ease); }
-        .icon-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--line-strong);
-            border-radius: 8px;
-            color: var(--ink-2);
-            width: 34px;
-            height: 34px;
-            cursor: pointer;
+        .library-sidebar-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            transition: border-color 0.3s var(--ease), color 0.3s var(--ease), transform 0.3s var(--spring);
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .icon-btn:hover { border-color: var(--acc); color: #fff; }
-        }
-        .icon-btn:active { transform: scale(0.9) rotate(-90deg); }
-        .drawer-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.55rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
-        .drawer-item {
-            display: flex;
-            align-items: center;
-            gap: 0.7rem;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 0.7rem 0.9rem;
-            text-decoration: none;
-            color: var(--ink);
-            transition: border-color 0.3s var(--ease), transform 0.3s var(--spring);
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .drawer-item:hover { border-color: var(--acc); transform: translateX(-3px); }
-        }
-        .drawer-item .itag {
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            margin-bottom: 1rem;
             flex-shrink: 0;
-            font-family: var(--mono);
-            font-size: 0.52rem;
+        }
+        .library-sidebar-title {
+            font-family: "Unbounded", sans-serif;
+            font-size: 0.8rem;
             font-weight: 700;
-            letter-spacing: 0.06em;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-        }
-        .itag.fap { background: rgba(255, 214, 10, 0.14); color: #ffd60a; }
-        .itag.ter { background: rgba(0, 168, 255, 0.14); color: #00a8ff; }
-        .drawer-item .ititle { font-size: 0.78rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .drawer-item .itime { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-3); flex-shrink: 0; }
-        .drawer-empty { font-size: 0.8rem; color: var(--ink-3); text-align: center; padding: 2rem 0; }
-
-        .foot {
-            position: relative;
-            z-index: 5;
-            text-align: center;
-            padding: 0 1rem 1.4rem;
-            font-family: var(--mono);
-            font-size: 0.58rem;
-            letter-spacing: 0.16em;
+            color: #3d3930;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
-            color: var(--ink-3);
         }
-
-        @media (max-width: 640px) {
-            .topbar { padding: 1rem 1.1rem; }
-            .topbar .brand { font-size: 0.82rem; }
-            .pill .pdot { display: none; }
-            .stage { gap: 1.5rem; padding: 5.5rem 1rem 2rem; }
-            .holo-area { height: clamp(80px, 24vw, 140px); }
-            .deck { padding: 0.4rem 0.4rem 0.4rem 1rem; }
-            .deck-input { font-size: 0.8rem; }
-            .launch-btn { padding: 0.9rem 1.2rem; font-size: 0.66rem; }
-            .hint { gap: 0.7rem; }
-            .sign-reflection { display: none; }
+        .library-sidebar-title .count {
+            color: #1a1814;
+            font-weight: 300;
+            font-size: 0.6rem;
         }
-        @media (prefers-reduced-motion: reduce) {
-            .splash .a18 .l, .splash .s-tag, .splash .s-warn, .enter-btn { animation: none; opacity: 1; transform: none; filter: none; }
-            .wordmark .word .l { transition: none; opacity: 1; transform: none; filter: none; }
-            .float, .scan, .pill .pdot, .sign .halo, .splash .a18-halo, .hud, .glow { animation: none; }
-            .sign { transition: opacity 0.4s var(--ease); }
+        .library-sidebar-close {
+            background: transparent;
+            border: none;
+            color: #3a362e;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            transition: color 0.3s ease;
+        }
+        .library-sidebar-close:hover {
+            color: #8a8477;
+        }
+        .library-sidebar-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+            margin-bottom: 0.8rem;
+        }
+        .library-sidebar-actions button {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
+            color: #3a362e;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.02);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .library-sidebar-actions button:hover {
+            color: #6b6558;
+            border-color: rgba(255,255,255,0.04);
+        }
+        .library-sidebar-actions button.clear:hover {
+            color: #ff4444;
+            border-color: rgba(255,68,68,0.1);
+        }
+        .library-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        .library-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        .library-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.01);
+        }
+        .library-list::-webkit-scrollbar-thumb {
+            background: rgba(255,215,0,0.1);
+            border-radius: 3px;
+        }
+        .library-item {
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(255,255,255,0.02);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        .library-item:hover {
+            background: rgba(255,255,255,0.03);
+            border-color: rgba(255,215,0,0.05);
+            transform: translateX(2px);
+        }
+        .library-item .item-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 0;
+        }
+        .library-item .item-icon {
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .library-item .item-title {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6rem;
+            color: #6b6558;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .library-item .item-platform {
+            padding: 0.05rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
+        }
+        .library-item .item-platform.faphouse {
+            background: rgba(245,197,24,0.04);
+            color: #f5c518;
+            border: 1px solid rgba(245,197,24,0.04);
+        }
+        .library-item .item-platform.terabox {
+            background: rgba(0,180,216,0.04);
+            color: #00b4d8;
+            border: 1px solid rgba(0,180,216,0.04);
+        }
+        .library-item .item-remove {
+            background: transparent;
+            border: none;
+            color: #3a362e;
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0 0.2rem;
+            flex-shrink: 0;
+        }
+        .library-item .item-remove:hover {
+            color: #ff4444;
+        }
+        .library-empty {
+            text-align: center;
+            padding: 2rem 0;
+            color: #1a1814;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+        }
+        .library-empty .empty-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .paste-footer {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 10;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.45rem;
+            color: #1a1814;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            transition: color 0.6s ease;
+        }
+        .paste-footer.terabox-footer { color: #0a2a3a; }
+        @media (max-width: 900px) {
+            .logo-faphouse { font-size: 3.5rem; }
+            .logo-terabox { font-size: 3rem; }
+            .platform-selector .pill { padding: 0.4rem 1.2rem; font-size: 0.5rem; }
+            .input-wrapper { flex-wrap: wrap; background: transparent; padding: 0; border: none; backdrop-filter: none; }
+            .input-wrapper input { padding: 0.8rem 1.2rem; background: rgba(8,8,8,0.9); border-radius: 60px; border: 1px solid rgba(255,215,0,0.03); width: 100%; margin-bottom: 0.5rem; }
+            .input-wrapper .btn-load { width: 100%; justify-content: center; }
+            .splash-18 { font-size: 5rem; }
+            .badge-18 { font-size: 0.45rem; padding: 0.02rem 0.4rem; }
+            .library-sidebar {
+                width: 320px;
+                right: -340px;
+            }
+            .library-sidebar.open { right: 0; }
+        }
+        @media (max-width: 500px) {
+            .logo-faphouse { font-size: 2.4rem; }
+            .logo-terabox { font-size: 2.2rem; }
+            .splash-18 { font-size: 3.5rem; }
+            .splash-18 span { font-size: 1.5rem; }
+            .badge-18 { font-size: 0.4rem; padding: 0.02rem 0.3rem; }
+            .platform-selector { gap: 0.3rem; padding: 0.2rem; }
+            .platform-selector .pill { padding: 0.3rem 0.8rem; font-size: 0.4rem; }
+            .library-sidebar {
+                width: 100%;
+                right: -100%;
+            }
+            .library-sidebar.open { right: 0; }
+            .library-toggle-btn {
+                top: 1rem;
+                right: 1rem;
+                width: 38px;
+                height: 38px;
+            }
+            .library-toggle-btn .bar { width: 16px; }
+            .library-toggle-btn .bar:nth-child(2) { width: 12px; }
+            .library-toggle-btn .bar:nth-child(3) { width: 14px; }
         }
     </style>
 </head>
-<body data-platform="faphouse">
-<div class="glow glow-fap"></div>
-<div class="glow glow-ter"></div>
-<div class="grid-bg"></div>
-<canvas id="particles"></canvas>
-<div class="vignette"></div>
-<div class="hud tl"></div><div class="hud tr"></div><div class="hud bl"></div><div class="hud br"></div>
-
-<div class="splash" id="splash">
-    <div class="term" id="termLines"><span class="ok">&gt;</span> INITIALIZING THE HOUSE…</div>
-    <div class="a18-wrap">
-        <div class="a18-halo"></div>
-        <div class="a18" id="a18">18+</div>
-    </div>
-    <div class="s-tag">Adult Content</div>
-    <div class="s-warn">This site contains adult material. You must be 18 or older to continue. By entering, you agree to our Terms of Service and Privacy Policy.</div>
-    <button class="enter-btn" id="enterBtn">Enter</button>
-    <div class="s-foot">18 U.S.C. §2257 Record Keeping</div>
-</div>
-
-<header class="topbar">
-    <div class="brand">
-        <span class="w">FAP</span><span class="a">HOUSE</span>
-        <span class="end">THE HOUSE</span>
-    </div>
-    <div class="top-right">
-        <div class="pill"><span class="pdot"></span><span id="statusText">STREAM ONLINE</span></div>
-        <div class="pill" id="clockPill"><span id="clockText">--:--:--</span></div>
-        <button class="pill lib-btn" id="libraryBtn">LIB <span class="count" id="libraryBadge">0</span></button>
-    </div>
-</header>
-
-<main class="stage">
-    <div class="holo-area">
-        <div class="sign active in" id="gateFaphouse">
-            <div class="halo"></div>
-            <div class="parallax">
-                <div class="float">
-                    <div class="wordmark" id="wmFaphouse">
-                        <span class="word white">FAP</span>
-                        <span class="word accent">HOUSE</span>
-                        <span class="scan"></span>
-                    </div>
-                </div>
-            </div>
-            <div class="sign-reflection">
-                <span class="word white">FAP</span>
-                <span class="word accent">HOUSE</span>
-            </div>
-        </div>
-        <div class="sign down" id="gateTerabox">
-            <div class="halo"></div>
-            <div class="parallax">
-                <div class="float">
-                    <div class="wordmark" id="wmTerabox">
-                        <span class="word white">TERA</span>
-                        <span class="word accent">BOX</span>
-                        <span class="scan"></span>
-                    </div>
-                </div>
-            </div>
-            <div class="sign-reflection">
-                <span class="word white">TERA</span>
-                <span class="word accent">BOX</span>
-            </div>
+<body>
+<div class="app" id="app">
+    <div class="splash-overlay" id="splashOverlay">
+        <div class="splash-content">
+            <div class="splash-18">18+<span>adult content</span></div>
+            <button class="splash-btn" id="enterBtn">enter</button>
+            <div class="splash-sub">you must be 18 or older to continue</div>
         </div>
     </div>
-
-    <div class="boot" id="bootBar">
-        <span class="boot-label" id="bootLabel">&gt; MOUNTING MODULE…</span>
-        <span class="boot-track"><span class="boot-fill" id="bootFill"></span></span>
+    <div class="page-paste" id="pagePaste">
+        <div class="bg-glow" id="bgGlow"></div>
+        <div class="bg-grid" id="bgGrid"></div>
+        <div class="brand-container">
+            <div class="logo-wrapper" id="logoWrapper">
+                <div class="logo-faphouse active" id="logoFaphouse">
+                    <span class="fap">FAP</span>
+                    <span class="house">HOUSE</span>
+                    <span class="badge-18" id="badgeFaphouse">18+</span>
+                </div>
+                <div class="logo-terabox hidden" id="logoTerabox">
+                    <span class="tera">TERA</span>
+                    <span class="box-text">BOX</span>
+                    <span class="badge-18 terabox-badge" id="badgeTerabox">18+</span>
+                </div>
+            </div>
+            <div class="brand-tagline" id="brandTagline">player · zero latency · dual platform</div>
+        </div>
+        <div class="input-area">
+            <div class="platform-selector" id="platformSelector">
+                <button class="pill active-faphouse" data-platform="faphouse" id="faphousePill">Faphouse</button>
+                <button class="pill" data-platform="terabox" id="teraboxPill">Terabox</button>
+            </div>
+            <form method="GET" action="/play" style="width:100%;" id="urlForm">
+                <div class="input-wrapper" id="inputWrapper">
+                    <input type="text" name="url" id="videoUrlInput" placeholder="https://faphouse2.com/videos/..." spellcheck="false" value="{{ video_url or '' }}">
+                    <button type="submit" class="btn-load" id="loadBtn">load</button>
+                </div>
+            </form>
+            <div class="input-example">
+                <span>try </span>
+                <span class="example-link" id="exampleFaphouse">https://faphouse2.com/videos/shared-bed-stepsister-fuck-C6Qi1u</span>
+                <span class="sep-dot">·</span>
+                <span class="example-link terabox-example" id="exampleTerabox">https://terafileshare.com/s/1xJtL3j2LJ-ZsUA6zbG7Pug</span>
+            </div>
+        </div>
+        
+        <div class="paste-footer" id="pasteFooter">premium · yellow black · faphouse + terabox</div>
     </div>
-
-    <div class="tagline">
-        <span class="tag-fap">Premium · Live · HD</span>
-        <span class="tag-ter">Files · Mirrors · Cloud</span>
-    </div>
-
-    <button class="switch-btn" id="platformSwitch">
-        <span class="sdot"></span>
-        <span class="label" id="switchLabel">Terabox</span>
-        <span class="arrow">↓</span>
+    
+    <!-- Library Toggle Button -->
+    <button class="library-toggle-btn" id="libraryToggleBtn">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="badge-count" id="libraryBadge">0</span>
     </button>
-
-    <form class="deck" id="urlForm" method="GET" action="/play">
-        <span class="deck-prefix" id="deckPrefix">fap://</span>
-        <input class="deck-input" id="videoUrlInput" name="url" type="text" spellcheck="false" autocomplete="off" placeholder="Paste a Faphouse or Terabox link here…" value="{{ video_url or '' }}">
-        <button type="submit" class="launch-btn" id="loadBtn">Launch</button>
-    </form>
-
-    <div class="hint">
-        <span><kbd>F</kbd> Faphouse</span>
-        <span><kbd>T</kbd> Terabox</span>
-        <span><kbd>Enter</kbd> Launch</span>
-        <span>Paste a link to auto-switch</span>
+    
+    <!-- Library Backdrop -->
+    <div class="library-sidebar-backdrop" id="libraryBackdrop"></div>
+    
+    <!-- Library Sidebar -->
+    <div class="library-sidebar" id="librarySidebar">
+        <div class="library-sidebar-header">
+            <div class="library-sidebar-title">
+                📚 Library <span class="count" id="sidebarCount">(0)</span>
+            </div>
+            <button class="library-sidebar-close" id="libraryCloseBtn">✕</button>
+        </div>
+        <div class="library-sidebar-actions">
+            <button id="refreshLibraryBtn">↻ refresh</button>
+            <button class="clear" id="clearLibraryBtn">clear all</button>
+        </div>
+        <div class="library-list" id="libraryList">
+            <div class="library-empty">
+                <span class="empty-icon">🎬</span>
+                No videos in library yet<br>
+                Watch something to save it here
+            </div>
+        </div>
     </div>
-
-    <div class="log"><span id="logLine">&gt; MODULE FAPHOUSE — ONLINE</span><span class="cur">▌</span></div>
-</main>
-
-<footer class="foot">Faphouse · The House of Adult Streaming</footer>
-
-<div class="scrim" id="scrim"></div>
-<aside class="drawer" id="libraryDrawer">
-    <div class="drawer-head">
-        <div class="drawer-title">My <span class="a">Library</span></div>
-        <button class="icon-btn" id="refreshLibraryBtn" title="Refresh">↻</button>
-    </div>
-    <div class="drawer-list" id="libraryList"></div>
-</aside>
-
+</div>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // ===== CORE REFS =====
-    var splash = document.getElementById('splash');
-    var enterBtn = document.getElementById('enterBtn');
-    var gateFaphouse = document.getElementById('gateFaphouse');
-    var gateTerabox = document.getElementById('gateTerabox');
-    var wmFaphouse = document.getElementById('wmFaphouse');
-    var wmTerabox = document.getElementById('wmTerabox');
-    var switchBtn = document.getElementById('platformSwitch');
-    var switchLabel = document.getElementById('switchLabel');
-    var deckPrefix = document.getElementById('deckPrefix');
-    var videoUrlInput = document.getElementById('videoUrlInput');
-    var urlForm = document.getElementById('urlForm');
-    var loadBtn = document.getElementById('loadBtn');
-    var clockText = document.getElementById('clockText');
-    var libraryBadge = document.getElementById('libraryBadge');
-    var libraryBtn = document.getElementById('libraryBtn');
-    var libraryDrawer = document.getElementById('libraryDrawer');
-    var libraryList = document.getElementById('libraryList');
-    var refreshLibraryBtn = document.getElementById('refreshLibraryBtn');
-    var scrim = document.getElementById('scrim');
-    var bootBar = document.getElementById('bootBar');
-    var bootLabel = document.getElementById('bootLabel');
-    var logLine = document.getElementById('logLine');
-    var termLines = document.getElementById('termLines');
-
-    var currentPlatform = 'faphouse';
-
-    // ===== LETTER BUILD =====
-    function splitLetters(root) {
-        var words = root.querySelectorAll('.word');
-        var idx = 0;
-        words.forEach(function(word) {
-            var text = word.textContent;
-            word.textContent = '';
-            for (var i = 0; i < text.length; i++) {
-                var s = document.createElement('span');
-                s.className = 'l';
-                s.style.transitionDelay = (idx * 55) + 'ms';
-                s.textContent = text[i];
-                word.appendChild(s);
-                idx++;
-            }
-        });
-    }
-    splitLetters(gateFaphouse);
-    splitLetters(gateTerabox);
-    splitLetters(gateFaphouse.querySelector('.sign-reflection'));
-    splitLetters(gateTerabox.querySelector('.sign-reflection'));
-    var a18 = document.getElementById('a18');
-    if (a18) splitLetters(a18);
-
-    // ===== SPLASH BOOT TYPING =====
-    var bootLines = [
-        { t: '> INITIALIZING THE HOUSE…', ok: false },
-        { t: '> ADULT CONTENT DETECTED', ok: true },
-        { t: '> AGE VERIFICATION REQUIRED', ok: true }
-    ];
-    var li = 0, ci = 0;
-    function typeStep() {
-        if (li >= bootLines.length) { revealSplash(); return; }
-        var line = bootLines[li];
-        ci++;
-        termLines.innerHTML = line.t.slice(0, ci).replace(/>/, '<span class="ok">&gt;</span>');
-        if (ci >= line.t.length) { li++; ci = 0; }
-        setTimeout(typeStep, 26);
-    }
-    function revealSplash() {
-        if (a18) a18.classList.add('in');
-        setTimeout(function() { enterBtn.style.opacity = '1'; }, 400);
-    }
-    setTimeout(typeStep, 300);
-
-    // ===== ENTER =====
-    function enterApp() {
-        if (splash) splash.classList.add('leave');
-        gateFaphouse.classList.add('in');
-        setTimeout(function() {
-            if (splash) splash.style.display = 'none';
-        }, 800);
-        try { sessionStorage.setItem('fap18', '1'); } catch (e) {}
-    }
-    enterBtn.addEventListener('click', enterApp);
-    try {
-        if (sessionStorage.getItem('fap18') === '1') enterApp();
-    } catch (e) {}
-
-    // ===== PLATFORM SWAP =====
-    function setPlatform(platform) {
-        if (platform === currentPlatform) return;
-        currentPlatform = platform;
-        document.body.dataset.platform = platform;
-        deckPrefix.textContent = platform === 'faphouse' ? 'fap://' : 'tera://';
-        switchLabel.textContent = platform === 'faphouse' ? 'Terabox' : 'Faphouse';
-        bootLabel.textContent = '> MOUNTING ' + platform.toUpperCase() + ' MODULE…';
-        logLine.textContent = '> MOUNTING ' + platform.toUpperCase() + ' MODULE…';
-        bootBar.classList.add('run');
-        var out, inn, wmOut, wmIn;
-        if (platform === 'faphouse') { out = gateTerabox; inn = gateFaphouse; wmOut = wmTerabox; wmIn = wmFaphouse; }
-        else { out = gateFaphouse; inn = gateTerabox; wmOut = wmFaphouse; wmIn = wmTerabox; }
-        wmOut.classList.add('glitch');
-        setTimeout(function() {
-            out.classList.remove('active', 'in');
-            out.classList.add('down');
-            inn.classList.remove('down');
-            inn.classList.add('active', 'in');
-            wmIn.classList.add('glitch');
-            setTimeout(function() {
-                wmIn.classList.remove('glitch');
-                wmOut.classList.remove('glitch');
-            }, 450);
-        }, 420);
-        setTimeout(function() {
-            bootBar.classList.remove('run');
-            logLine.textContent = '> MODULE ' + platform.toUpperCase() + ' — ONLINE';
-        }, 1500);
-    }
-
-    gateFaphouse.addEventListener('click', function() { setPlatform('faphouse'); });
-    gateTerabox.addEventListener('click', function() { setPlatform('terabox'); });
-    switchBtn.addEventListener('click', function() {
-        setPlatform(currentPlatform === 'faphouse' ? 'terabox' : 'faphouse');
-    });
-
-    // ===== AUTO-DETECT =====
-    function detectPlatform(url) {
-        if (!url) return null;
-        if (/terabox|terafileshare|terafile|teracloud|filemirror/i.test(url)) return 'terabox';
-        if (/faphouse|fap-house|fap/i.test(url)) return 'faphouse';
-        return null;
-    }
-    videoUrlInput.addEventListener('input', function() {
-        var p = detectPlatform(videoUrlInput.value);
-        if (p) setPlatform(p);
-    });
-    videoUrlInput.addEventListener('paste', function() {
-        var self = this;
-        setTimeout(function() {
-            var p = detectPlatform(self.value);
-            if (p) setPlatform(p);
-        }, 50);
-    });
-
-    // ===== LAUNCH =====
-    urlForm.addEventListener('submit', function(e) {
-        loadBtn.classList.add('loading');
-        urlForm.action = currentPlatform === 'terabox' ? '/terabox' : '/play';
-    });
-
-    // ===== LIBRARY =====
+    // ===== LIBRARY FUNCTIONS =====
     function getLibrary(platform) {
         try {
-            var key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+            const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
             return JSON.parse(localStorage.getItem(key) || '[]');
-        } catch (e) { return []; }
+        } catch {
+            return [];
+        }
     }
-    function renderLibrary() {
-        var items = [];
-        ['faphouse', 'terabox'].forEach(function(pl) {
-            getLibrary(pl).forEach(function(v) { items.push({ v: v, pl: pl }); });
-        });
-        libraryBadge.textContent = String(items.length);
-        libraryList.innerHTML = '';
-        if (items.length === 0) {
-            var empty = document.createElement('div');
-            empty.className = 'drawer-empty';
-            empty.textContent = 'No saved videos yet.';
-            libraryList.appendChild(empty);
+    
+    function saveLibrary(platform, library) {
+        const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+        localStorage.setItem(key, JSON.stringify(library));
+        renderLibrary();
+    }
+    
+    function addToLibrary(platform, video) {
+        const library = getLibrary(platform);
+        const exists = library.some(item => item.url === video.url);
+        if (!exists) {
+            video.watchedAt = new Date().toISOString();
+            library.unshift(video);
+            saveLibrary(platform, library);
+            showToast('📚 Added to ' + platform + ' library');
+            return true;
+        }
+        return false;
+    }
+    
+    function removeFromLibrary(platform, url) {
+        const library = getLibrary(platform).filter(item => item.url !== url);
+        saveLibrary(platform, library);
+    }
+    
+    function clearLibrary(platform) {
+        if (confirm('Clear all ' + platform + ' videos from library?')) {
+            saveLibrary(platform, []);
+        }
+    }
+    
+    function showToast(message) {
+        const toast = document.getElementById('saveToast');
+        if (!toast) {
+            const newToast = document.createElement('div');
+            newToast.id = 'saveToast';
+            newToast.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(245,197,24,0.1);
+                border: 1px solid rgba(245,197,24,0.05);
+                padding: 0.4rem 1.2rem;
+                border-radius: 30px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 0.5rem;
+                color: #f5c518;
+                opacity: 0;
+                transition: all 0.5s ease;
+                pointer-events: none;
+                z-index: 100;
+                backdrop-filter: blur(10px);
+            `;
+            document.body.appendChild(newToast);
+            newToast.textContent = message;
+            setTimeout(() => {
+                newToast.classList.add('show');
+                newToast.style.opacity = '1';
+                newToast.style.bottom = '100px';
+            }, 100);
+            setTimeout(() => {
+                newToast.style.opacity = '0';
+                newToast.style.bottom = '80px';
+                setTimeout(() => newToast.remove(), 500);
+            }, 3000);
             return;
         }
-        items.slice(0, 50).forEach(function(it) {
-            var a = document.createElement('a');
-            a.className = 'drawer-item';
-            var target = it.v.url || it.v.videoUrl || '';
-            a.href = (it.pl === 'faphouse' ? '/play?url=' : '/terabox?url=') + encodeURIComponent(target);
-            var tag = document.createElement('span');
-            tag.className = 'itag ' + (it.pl === 'faphouse' ? 'fap' : 'ter');
-            tag.textContent = it.pl === 'faphouse' ? 'FAP' : 'TERA';
-            var title = document.createElement('span');
-            title.className = 'ititle';
-            title.textContent = it.v.title || 'Saved video';
-            var time = document.createElement('span');
-            time.className = 'itime';
-            time.textContent = it.v.watchedAt ? new Date(it.v.watchedAt).toLocaleDateString() : '';
-            a.appendChild(tag);
-            a.appendChild(title);
-            a.appendChild(time);
-            libraryList.appendChild(a);
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+    
+    function renderLibrary() {
+        const platform = currentPlatform || 'faphouse';
+        const library = getLibrary(platform);
+        const list = document.getElementById('libraryList');
+        const badge = document.getElementById('libraryBadge');
+        const sidebarCount = document.getElementById('sidebarCount');
+        const btn = document.getElementById('libraryToggleBtn');
+        
+        badge.textContent = library.length;
+        sidebarCount.textContent = `(${library.length})`;
+        
+        if (platform === 'terabox') {
+            btn.classList.add('terabox-mode');
+        } else {
+            btn.classList.remove('terabox-mode');
+        }
+        
+        if (library.length === 0) {
+            list.innerHTML = `
+                <div class="library-empty">
+                    <span class="empty-icon">🎬</span>
+                    No ${platform} videos in library yet
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        library.forEach((item, index) => {
+            const icon = platform === 'faphouse' ? '🔞' : '📦';
+            const title = item.title || (item.file_name || 'Untitled');
+            
+            html += `
+                <div class="library-item" data-index="${index}" data-url="${item.url}">
+                    <div class="item-info">
+                        <span class="item-icon">${icon}</span>
+                        <span class="item-title">${title}</span>
+                        <span class="item-platform ${platform}">${platform}</span>
+                    </div>
+                    <button class="item-remove" data-url="${item.url}">✕</button>
+                </div>
+            `;
         });
-    }
-    renderLibrary();
-    refreshLibraryBtn.addEventListener('click', renderLibrary);
-    function toggleDrawer(open) {
-        var o = open !== undefined ? open : !libraryDrawer.classList.contains('open');
-        libraryDrawer.classList.toggle('open', o);
-        scrim.classList.toggle('open', o);
-    }
-    libraryBtn.addEventListener('click', function() { toggleDrawer(); });
-    scrim.addEventListener('click', function() { toggleDrawer(false); });
-
-    // ===== CLOCK =====
-    function tick() {
-        var d = new Date();
-        var p = function(n) { return String(n).padStart(2, '0'); };
-        clockText.textContent = p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds());
-    }
-    tick();
-    setInterval(tick, 1000);
-
-    // ===== 3D PARALLAX =====
-    var canParallax = false;
-    try {
-        canParallax = window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
-                      !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    } catch (e) {}
-    if (canParallax) {
-        var pWrap = [gateFaphouse.querySelector('.parallax'), gateTerabox.querySelector('.parallax')];
-        var tx = 0, ty = 0, cx = 0, cy = 0;
-        document.addEventListener('mousemove', function(e) {
-            tx = (e.clientX / window.innerWidth - 0.5);
-            ty = (e.clientY / window.innerHeight - 0.5);
-        });
-        function pLoop() {
-            cx += (tx - cx) * 0.07;
-            cy += (ty - cy) * 0.07;
-            var rx = -cy * 7;
-            var ry = cx * 10;
-            pWrap.forEach(function(el) {
-                el.style.transform = 'rotateX(' + rx + 'deg) rotateY(' + ry + 'deg)';
+        
+        list.innerHTML = html;
+        
+        list.querySelectorAll('.library-item').forEach(el => {
+            const url = el.dataset.url;
+            
+            el.addEventListener('click', function(e) {
+                if (e.target.closest('.item-remove')) return;
+                const form = document.getElementById('urlForm');
+                const input = document.getElementById('videoUrlInput');
+                input.value = url;
+                form.action = platform === 'faphouse' ? '/play' : '/terabox';
+                form.submit();
+                closeLibrary();
             });
-            requestAnimationFrame(pLoop);
-        }
-        pLoop();
+            
+            el.querySelector('.item-remove').addEventListener('click', function(e) {
+                e.stopPropagation();
+                removeFromLibrary(platform, this.dataset.url);
+            });
+        });
     }
-
-    // ===== PARTICLES =====
-    var reduce = false;
-    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-    if (!reduce) {
-        var canvas = document.getElementById('particles');
-        var ctx = null;
-        try { ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null; } catch (e) {}
-        if (!ctx) { /* particles unavailable */ }
-        else {
-            var W, H, parts = [];
-        function sizeCanvas() {
-            W = window.innerWidth; H = window.innerHeight;
-            var dpr = Math.min(window.devicePixelRatio || 1, 2);
-            canvas.width = W * dpr; canvas.height = H * dpr;
-            canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-        function seedParts() {
-            parts = [];
-            var n = Math.min(46, Math.floor(W / 26));
-            for (var i = 0; i < n; i++) {
-                parts.push({
-                    x: Math.random() * W,
-                    y: Math.random() * H,
-                    r: Math.random() * 1.5 + 0.4,
-                    vy: -(Math.random() * 0.3 + 0.06),
-                    vx: (Math.random() - 0.5) * 0.12,
-                    a: Math.random() * 0.35 + 0.12
-                });
-            }
-        }
-        function drawParticles() {
-            ctx.clearRect(0, 0, W, H);
-            for (var i = 0; i < parts.length; i++) {
-                var p = parts[i];
-                p.y += p.vy; p.x += p.vx;
-                if (p.y < -4) { p.y = H + 4; p.x = Math.random() * W; }
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, 6.2832);
-                ctx.fillStyle = 'rgba(255,255,255,' + p.a + ')';
-                ctx.fill();
-            }
-            requestAnimationFrame(drawParticles);
-        }
-        sizeCanvas();
-        seedParts();
-        drawParticles();
-        window.addEventListener('resize', function() { sizeCanvas(); seedParts(); });
+    
+    // ===== LIBRARY SIDEBAR CONTROLS =====
+    function toggleLibrary() {
+        const sidebar = document.getElementById('librarySidebar');
+        const backdrop = document.getElementById('libraryBackdrop');
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open');
+        if (sidebar.classList.contains('open')) {
+            renderLibrary();
         }
     }
-
-    // ===== KEYBOARD =====
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'f' || e.key === 'F') setPlatform('faphouse');
-        if (e.key === 't' || e.key === 'T') setPlatform('terabox');
+    
+    function closeLibrary() {
+        document.getElementById('librarySidebar').classList.remove('open');
+        document.getElementById('libraryBackdrop').classList.remove('open');
+    }
+    
+    document.getElementById('libraryToggleBtn').addEventListener('click', toggleLibrary);
+    document.getElementById('libraryCloseBtn').addEventListener('click', closeLibrary);
+    document.getElementById('libraryBackdrop').addEventListener('click', closeLibrary);
+    document.getElementById('refreshLibraryBtn').addEventListener('click', renderLibrary);
+    document.getElementById('clearLibraryBtn').addEventListener('click', function() {
+        clearLibrary(currentPlatform);
     });
-});
+    
+    // ===== UI FUNCTIONS =====
+    document.getElementById('enterBtn').addEventListener('click', function() {
+        document.getElementById('splashOverlay').classList.add('hidden');
+        document.getElementById('pagePaste').classList.add('visible');
+        renderLibrary();
+    });
+    
+    const faphousePill = document.getElementById('faphousePill');
+    const teraboxPill = document.getElementById('teraboxPill');
+    const logoFaphouse = document.getElementById('logoFaphouse');
+    const logoTerabox = document.getElementById('logoTerabox');
+    const badgeFaphouse = document.getElementById('badgeFaphouse');
+    const badgeTerabox = document.getElementById('badgeTerabox');
+    const brandTagline = document.getElementById('brandTagline');
+    const pasteFooter = document.getElementById('pasteFooter');
+    const bgGlow = document.getElementById('bgGlow');
+    const bgGrid = document.getElementById('bgGrid');
+    const inputWrapper = document.getElementById('inputWrapper');
+    const loadBtn = document.getElementById('loadBtn');
+    const videoUrlInput = document.getElementById('videoUrlInput');
+    const urlForm = document.getElementById('urlForm');
+    const exampleFaphouse = document.getElementById('exampleFaphouse');
+    const exampleTerabox = document.getElementById('exampleTerabox');
+    
+    let currentPlatform = 'faphouse';
+    
+    function setPlatform(platform) {
+        currentPlatform = platform;
+        faphousePill.classList.remove('active-faphouse');
+        teraboxPill.classList.remove('active-terabox');
+        
+        if (platform === 'faphouse') {
+            faphousePill.classList.add('active-faphouse');
+            logoFaphouse.classList.remove('hidden');
+            logoFaphouse.classList.add('active');
+            logoTerabox.classList.remove('active');
+            logoTerabox.classList.add('hidden');
+            badgeFaphouse.classList.remove('terabox-badge');
+            brandTagline.classList.remove('terabox-tagline');
+            pasteFooter.classList.remove('terabox-footer');
+            bgGlow.classList.remove('terabox-glow');
+            bgGrid.classList.remove('terabox-grid');
+            inputWrapper.classList.remove('terabox-mode');
+            loadBtn.classList.remove('terabox-mode');
+            videoUrlInput.placeholder = 'https://faphouse2.com/videos/...';
+            loadBtn.textContent = 'load';
+            urlForm.action = '/play';
+        } else {
+            teraboxPill.classList.add('active-terabox');
+            logoTerabox.classList.remove('hidden');
+            logoTerabox.classList.add('active');
+            logoFaphouse.classList.remove('active');
+            logoFaphouse.classList.add('hidden');
+            badgeTerabox.classList.add('terabox-badge');
+            brandTagline.classList.add('terabox-tagline');
+            pasteFooter.classList.add('terabox-footer');
+            bgGlow.classList.add('terabox-glow');
+            bgGrid.classList.add('terabox-grid');
+            inputWrapper.classList.add('terabox-mode');
+            loadBtn.classList.add('terabox-mode');
+            videoUrlInput.placeholder = 'https://terafileshare.com/s/...';
+            loadBtn.textContent = 'extract';
+            urlForm.action = '/terabox';
+        }
+        renderLibrary();
+    }
+    
+    function detectPlatformFromUrl(val) {
+        if (val.includes('terabox') || 
+            val.includes('terafileshare') ||
+            val.includes('share.com') || 
+            val.includes('file.com') ||
+            val.includes('teraboxlink') ||
+            val.includes('1024terabox') ||
+            val.includes('teraboxapp')) {
+            setPlatform('terabox');
+        } else if (val.includes('faphouse') || val.includes('faphouse2')) {
+            setPlatform('faphouse');
+        }
+    }
+    
+    faphousePill.addEventListener('click', function() { 
+        setPlatform('faphouse'); 
+        videoUrlInput.value = '';
+    });
+    
+    teraboxPill.addEventListener('click', function() { 
+        setPlatform('terabox');
+        videoUrlInput.value = '';
+    });
+    
+    exampleFaphouse.addEventListener('click', function() {
+        setPlatform('faphouse');
+        videoUrlInput.value = this.textContent;
+        detectPlatformFromUrl(this.textContent.toLowerCase());
+        setTimeout(function() {
+            urlForm.submit();
+        }, 100);
+    });
+    
+    exampleTerabox.addEventListener('click', function() {
+        setPlatform('terabox');
+        videoUrlInput.value = this.textContent;
+        detectPlatformFromUrl(this.textContent.toLowerCase());
+        setTimeout(function() {
+            urlForm.submit();
+        }, 100);
+    });
+    
+    videoUrlInput.addEventListener('paste', function(e) {
+        setTimeout(function() {
+            const val = this.value.toLowerCase();
+            detectPlatformFromUrl(val);
+        }.bind(this), 50);
+    });
+    
+    videoUrlInput.addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        detectPlatformFromUrl(val);
+    });
+    
+    videoUrlInput.addEventListener('change', function() {
+        const val = this.value.toLowerCase();
+        detectPlatformFromUrl(val);
+    });
+    
+    videoUrlInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = this.value.toLowerCase();
+            detectPlatformFromUrl(val);
+            urlForm.submit();
+        }
+    });
 </script>
 </body>
 </html>
 """
 
-PLAYER_PAGE_HTML = r"""
+PLAYER_PAGE_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Faphouse · The House</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Faphouse Player</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
     <link href="https://vjs.zencdn.net/8.0.0/video-js.css" rel="stylesheet" />
     <style>
-        :root {
-            --bg: #07070a;
-            --ink: #f5f5f7;
-            --ink-2: #9a9aa3;
-            --acc: #ffd60a;
-            --acc-rgb: 255, 214, 10;
-            --line: rgba(255, 255, 255, 0.1);
-            --ease: cubic-bezier(0.16, 1, 0.3, 1);
-            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
-            background: var(--bg);
-            font-family: "Space Grotesk", -apple-system, sans-serif;
-            color: var(--ink);
+            background: #0a0a0a;
+            font-family: "Unbounded", sans-serif;
+            color: #f5f0e6;
             height: 100vh;
             width: 100vw;
             overflow: hidden;
@@ -1523,243 +1516,186 @@ PLAYER_PAGE_HTML = r"""
             left: 0;
             margin: 0;
             padding: 0;
-            -webkit-font-smoothing: antialiased;
-        }
-        .bg-glow {
-            position: absolute;
-            top: -25%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80vmax;
-            height: 55vmax;
-            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.12), transparent 62%);
-            pointer-events: none;
         }
         .app {
-            position: relative;
             width: 100vw;
             height: 100vh;
+            position: relative;
+            background: #0a0a0a;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            gap: 1.2rem;
-            padding: 1.2rem 1.4rem;
         }
-
-        /* ===== VIDEO FRAME ===== */
         .video-wrapper {
             position: relative;
-            width: min(90vw, 920px);
-            aspect-ratio: 16 / 9;
-            background: #000;
-            border-radius: 24px;
+            width: 90%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            background: #000000;
+            border-radius: 12px;
             overflow: hidden;
-            border: 1px solid var(--line);
-            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0,0,0,0.6);
-            opacity: 0;
-            transform: translateY(24px) scale(0.98);
-            animation: frameIn 700ms var(--ease) forwards;
+            box-shadow: 0 0 0 1px rgba(255,215,0,0.02), 0 20px 60px rgba(0,0,0,0.9);
         }
-        @keyframes frameIn { to { opacity: 1; transform: translateY(0) scale(1); } }
         #player {
             width: 100%;
             height: 100%;
             display: block;
-            background: #000;
+            background: #000000;
         }
-
-        /* ===== HEADER (overlay) ===== */
         .header {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             z-index: 15;
-            padding: 0.9rem 1.1rem;
-            background: linear-gradient(180deg, rgba(0,0,0,0.72) 0%, transparent 100%);
+            padding: 1rem 1.5rem;
+            background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
             display: flex;
             align-items: center;
             justify-content: space-between;
             opacity: 0;
-            transition: opacity 300ms var(--ease);
+            transition: opacity 0.3s ease;
             pointer-events: none;
         }
         .header.visible { opacity: 1; pointer-events: auto; }
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(20,20,22,0.55);
-            backdrop-filter: blur(16px) saturate(160%);
-            -webkit-backdrop-filter: blur(16px) saturate(160%);
-            border-radius: 999px;
-            padding: 0.34rem 0.85rem;
+        .header-brand { display: flex; align-items: baseline; gap: 0.2rem; }
+        .header-brand .fap {
+            font-family: "Unbounded", sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #f5c518, #d4a800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .header-brand .word { font-family: "Orbitron", sans-serif;
-            font-weight: 800;
-            font-size: 0.66rem;
-            letter-spacing: 0.02em;
-            color: #fff;
+        .header-brand .house {
+            font-family: "Unbounded", sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: #f5f0e6;
         }
-        .header-brand .dot { color: var(--acc); text-shadow: 0 0 12px rgba(255,214,10,0.6); }
-        .header-badge { font-family: "Orbitron", sans-serif;
-            font-size: 0.55rem;
-            font-weight: 800;
-            color: #0a0a0b;
-            background: var(--acc);
-            border-radius: 999px;
-            padding: 0.12rem 0.4rem;
-        }
-        .header-right { display: flex; align-items: center; gap: 0.5rem; }
-        .quality-badge { font-family: "Orbitron", sans-serif;
-            font-size: 0.55rem;
+        .header-badge {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
             font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--acc);
-            background: rgba(20,20,22,0.55);
-            backdrop-filter: blur(16px) saturate(160%);
-            -webkit-backdrop-filter: blur(16px) saturate(160%);
-            border: 1px solid rgba(var(--acc-rgb), 0.35);
-            border-radius: 999px;
-            padding: 0.3rem 0.7rem;
+            color: #f5c518;
+            background: rgba(245,197,24,0.04);
+            border: 1px solid rgba(245,197,24,0.06);
+            padding: 0.02rem 0.4rem;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            margin-left: 0.2rem;
         }
-        .quality-badge.live { color: var(--acc); }
         .header-status {
-            font-size: 0.55rem;
-            font-weight: 600;
-            color: rgba(255,255,255,0.8);
-            background: rgba(20,20,22,0.55);
-            backdrop-filter: blur(16px) saturate(160%);
-            -webkit-backdrop-filter: blur(16px) saturate(160%);
-            border-radius: 999px;
-            padding: 0.3rem 0.7rem;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.35rem;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             display: flex;
             align-items: center;
-            gap: 0.35rem;
+            gap: 0.3rem;
         }
         .header-status .dot {
-            width: 7px;
-            height: 7px;
+            width: 4px;
+            height: 4px;
             border-radius: 50%;
-            background: var(--acc);
-            box-shadow: 0 0 10px var(--acc);
-            animation: pulse 1.5s ease-in-out infinite;
+            background: #f5c518;
+            animation: pulse 1.5s infinite;
             display: inline-block;
         }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
         .back-btn {
-            background: rgba(20,20,22,0.55);
-            backdrop-filter: blur(16px) saturate(160%);
-            -webkit-backdrop-filter: blur(16px) saturate(160%);
-            border: 1px solid rgba(255,255,255,0.12);
-            color: #fff;
-            border-radius: 999px;
-            padding: 0.34rem 0.9rem;
-            font-family: inherit;
-            font-size: 0.62rem;
-            font-weight: 600;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.03);
+            color: rgba(255,255,255,0.3);
+            padding: 0.15rem 0.8rem;
+            border-radius: 30px;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
             cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             text-decoration: none;
-            letter-spacing: 0.01em;
             touch-action: manipulation;
-            min-height: 26px;
+            min-height: 24px;
             display: flex;
             align-items: center;
-            transition: transform 180ms var(--ease), background 250ms var(--ease), border-color 250ms var(--ease);
         }
-        @media (hover: hover) and (pointer: fine) {
-            .back-btn:hover { background: rgba(20,20,22,0.78); border-color: var(--acc); }
-        }
-        .back-btn:active { transform: scale(0.95); }
-
-        /* ===== CENTER PLAY ===== */
+        .back-btn:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6); }
         .center-play {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 12;
-            width: clamp(60px, 9vw, 76px);
-            height: clamp(60px, 9vw, 76px);
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
-            background: var(--acc);
-            border: none;
-            color: #0a0a0b;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.6);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 0 6px rgba(var(--acc-rgb), 0.2), 0 14px 50px rgba(var(--acc-rgb), 0.5);
+            transition: all 0.3s ease;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 250ms var(--ease), transform 250ms var(--ease);
         }
         .center-play.visible { opacity: 1; pointer-events: auto; }
-        @media (hover: hover) and (pointer: fine) {
-            .center-play:hover { transform: translate(-50%, -50%) scale(1.06); }
+        .center-play:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,215,0,0.1);
+            transform: translate(-50%, -50%) scale(1.05);
         }
-        .center-play:active { transform: translate(-50%, -50%) scale(0.94); }
-        .center-play svg { width: 30px; height: 30px; fill: currentColor; margin-left: 4px; }
-
-        /* ===== CONTROLS (overlay) ===== */
+        .center-play:active { transform: translate(-50%, -50%) scale(0.92); }
+        .center-play svg { width: 28px; height: 28px; fill: currentColor; margin-left: 4px; }
         .controls-wrapper {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
             z-index: 20;
-            padding: 1rem 1rem 0.9rem 1rem;
-            background: linear-gradient(0deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 70%, transparent 100%);
+            padding: 0 1.2rem 1.2rem 1.2rem;
+            background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 70%, transparent 100%);
             opacity: 0;
-            transition: opacity 300ms var(--ease);
+            transition: opacity 0.3s ease;
         }
         .controls-wrapper.visible { opacity: 1; }
-        .progress-section { width: 100%; padding: 0 0 0.55rem 0; }
+        .progress-section { width: 100%; padding: 0.3rem 0 0.2rem 0; }
         .progress-track {
             position: relative;
             width: 100%;
-            height: 5px;
-            background: rgba(255,255,255,0.22);
-            border-radius: 4px;
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
             cursor: pointer;
-            transition: height 200ms var(--ease);
+            transition: height 0.2s ease;
         }
-        .progress-track:hover { height: 7px; }
+        .progress-track:hover { height: 5px; }
         .progress-fill {
             height: 100%;
             width: 0%;
-            background: var(--acc);
-            border-radius: 4px;
+            background: linear-gradient(90deg, #f5c518, #d4a800);
+            border-radius: 2px;
             position: relative;
-            transition: width 0.1s linear;
-            box-shadow: 0 0 12px rgba(var(--acc-rgb), 0.7);
-        }
-        .progress-buffer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 0%;
-            background: rgba(255,255,255,0.35);
-            border-radius: 4px;
-            transition: width 0.3s var(--ease);
+            transition: width 0.1s ease;
         }
         .progress-fill::after {
             content: '';
             position: absolute;
-            right: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 14px;
-            height: 14px;
+            right: -4px;
+            top: -3px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
-            background: var(--acc);
-            box-shadow: 0 2px 10px rgba(var(--acc-rgb), 0.8);
+            background: #f5c518;
             opacity: 0;
-            transition: opacity 200ms var(--ease);
+            transition: opacity 0.2s ease;
+            box-shadow: 0 0 15px rgba(245,197,24,0.2);
         }
         .progress-track:hover .progress-fill::after,
         .progress-track.touching .progress-fill::after { opacity: 1; }
@@ -1767,266 +1703,140 @@ PLAYER_PAGE_HTML = r"""
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0.2rem 0;
             gap: 0.3rem;
         }
         .controls-row button {
             background: transparent;
             border: none;
-            color: rgba(255,255,255,0.85);
-            padding: 0.3rem 0.5rem;
-            font-family: inherit;
-            font-size: 0.66rem;
-            font-weight: 600;
+            color: rgba(255,255,255,0.5);
+            padding: 0.2rem 0.4rem;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.55rem;
             cursor: pointer;
-            transition: transform 160ms var(--ease), color 200ms var(--ease), background 200ms var(--ease);
-            border-radius: 999px;
-            min-height: 34px;
+            transition: all 0.15s ease;
+            letter-spacing: 0.02em;
+            border-radius: 30px;
+            min-height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
             touch-action: manipulation;
         }
-        .controls-row button:active { transform: scale(0.92); color: var(--acc); }
-        .controls-row .seek-btn {
+        .controls-row button:active { transform: scale(0.92); color: #ffffff; }
+        .controls-row .play-btn {
+            font-family: "Unbounded", sans-serif;
             font-size: 0.6rem;
-            color: rgba(255,255,255,0.7);
-            padding: 0.25rem 0.5rem;
-            min-height: 30px;
+            color: #ffffff;
+            padding: 0.2rem 1.2rem;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 30px;
+            min-width: 54px;
+            background: rgba(255,255,255,0.01);
         }
-        @media (hover: hover) and (pointer: fine) {
-            .controls-row .seek-btn:hover { color: var(--acc); background: rgba(255,255,255,0.1); }
+        .controls-row .play-btn:hover {
+            background: rgba(255,255,255,0.03);
+            border-color: rgba(255,255,255,0.06);
         }
-        .controls-row .time-display { font-family: "JetBrains Mono", monospace;
-            font-size: 0.62rem;
-            font-weight: 500;
-            color: rgba(255,255,255,0.9);
-            padding: 0.1rem 0.4rem;
-            letter-spacing: 0.04em;
-            min-width: 84px;
+        .controls-row .play-btn:active {
+            background: rgba(255,215,0,0.04);
+            border-color: rgba(255,215,0,0.06);
+            transform: scale(0.95);
+        }
+        .controls-row .seek-btn {
+            font-size: 0.45rem;
+            color: rgba(255,255,255,0.3);
+            padding: 0.15rem 0.3rem;
+            min-height: 24px;
+        }
+        .controls-row .seek-btn:hover { color: rgba(255,255,255,0.7); }
+        .controls-row .time-display {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.45rem;
+            color: rgba(255,255,255,0.25);
+            padding: 0.1rem 0.3rem;
+            letter-spacing: 0.02em;
+            min-width: 60px;
             text-align: center;
             font-variant-numeric: tabular-nums;
-            white-space: nowrap;
         }
-        .controls-row .fs-btn { font-size: 0.58rem; color: rgba(255,255,255,0.7); min-height: 30px; }
-        .controls-row .fs-btn svg { width: 17px; height: 17px; }
-        .controls-row .icon-btn { width: 38px; height: 38px; padding: 0; }
-        .controls-row .icon-btn svg { fill: currentColor; }
-        .controls-row .play-btn {
-            width: clamp(42px, 6vw, 52px);
-            height: clamp(42px, 6vw, 52px);
-            min-width: 42px;
-            min-height: 42px;
-            padding: 0;
-            border-radius: 50%;
-            background: var(--acc);
-            color: #0a0a0b;
-            box-shadow: 0 0 0 5px rgba(var(--acc-rgb), 0.18), 0 6px 26px rgba(var(--acc-rgb), 0.5);
+        .controls-row .fs-btn {
+            font-size: 0.45rem;
+            color: rgba(255,255,255,0.25);
+            padding: 0.15rem 0.4rem;
+            letter-spacing: 0.05em;
+            min-height: 24px;
         }
-        @media (hover: hover) and (pointer: fine) {
-            .controls-row .play-btn:hover { background: #ffe14d; color: #0a0a0b; }
-        }
-        .controls-row .play-btn svg { width: 20px; height: 20px; display: none; }
-        .controls-row .play-btn svg.icon-play { margin-left: 2px; }
-        .controls-row .play-btn.playing svg.icon-pause { display: block; }
-        .controls-row .play-btn.playing svg.icon-play { display: none; }
-        .controls-row .play-btn:not(.playing) svg.icon-play { display: block; }
-        .volume-group { display: flex; align-items: center; gap: 0.4rem; }
-        .controls-row .vol-btn {
-            width: 36px;
-            height: 36px;
-            min-height: 36px;
-            padding: 0;
-            border-radius: 50%;
-            color: rgba(255,255,255,0.85);
-        }
-        .controls-row .vol-btn svg { width: 18px; height: 18px; fill: currentColor; }
-        .controls-row .vol-btn.muted { color: rgba(255,255,255,0.35); }
-        @media (hover: hover) and (pointer: fine) {
-            .controls-row .vol-btn:hover { background: rgba(255,255,255,0.12); color: var(--acc); }
-        }
-        .vol-slider {
-            width: 80px;
-            height: 5px;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.22);
-            cursor: pointer;
-            position: relative;
-            transition: width 250ms var(--ease);
-        }
-        .vol-slider .vol-fill {
-            height: 100%;
-            width: 100%;
-            background: var(--acc);
-            border-radius: 4px;
-            position: relative;
-        }
-        .vol-slider .vol-fill::after {
-            content: '';
-            position: absolute;
-            right: -4px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--acc);
-            box-shadow: 0 0 8px rgba(var(--acc-rgb), 0.7);
-            opacity: 0;
-            transition: opacity 200ms var(--ease);
-        }
-        .vol-slider:hover .vol-fill::after { opacity: 1; }
-
-        /* ===== BUFFERING ===== */
-        .buffering-overlay {
+        .controls-row .fs-btn:hover { color: rgba(255,255,255,0.6); }
+        .click-overlay {
             position: absolute;
             inset: 0;
-            z-index: 11;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.35);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 300ms var(--ease);
-        }
-        .buffering-overlay.visible { opacity: 1; pointer-events: auto; }
-        .buffering-spinner {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 3px solid rgba(var(--acc-rgb), 0.25);
-            border-top-color: var(--acc);
-            animation: buffSpin 0.8s linear infinite;
-        }
-        @keyframes buffSpin { to { transform: rotate(360deg); } }
-
-        /* ===== CLICK OVERLAY ===== */
-        .click-overlay { position: absolute; inset: 0; z-index: 10; cursor: pointer; }
-
-        /* ===== META BELOW ===== */
-        .meta {
-            width: min(90vw, 920px);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            opacity: 0;
-            transform: translateY(16px);
-            animation: metaIn 600ms var(--ease) forwards;
-            animation-delay: 300ms;
-        }
-        @keyframes metaIn { to { opacity: 1; transform: translateY(0); } }
-        .meta-title { font-family: "Orbitron", sans-serif;
-            font-weight: 700;
-            font-size: clamp(0.82rem, 2vw, 1rem);
-            letter-spacing: 0.01em;
-            color: var(--ink);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 60%;
-        }
-        .meta-title .a { color: var(--acc); text-shadow: 0 0 14px rgba(255,214,10,0.6); }
-        .meta-caption {
-            font-size: 0.68rem;
-            font-weight: 400;
-            color: var(--ink-2);
-            margin-top: 0.25rem;
-        }
-        .meta-actions { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
-        .meta-btn { font-family: "Orbitron", sans-serif;
-            background: var(--acc);
-            color: #0a0a0b;
-            border: none;
-            border-radius: 999px;
-            padding: 0.55rem 1.1rem;
-            font-family: "Space Grotesk", sans-serif;
-            font-weight: 700;
-            font-size: 0.64rem;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            text-decoration: none;
+            z-index: 10;
             cursor: pointer;
-            box-shadow: 0 8px 28px rgba(var(--acc-rgb), 0.35);
-            transition: transform 180ms var(--ease), box-shadow 300ms var(--ease);
         }
-        @media (hover: hover) and (pointer: fine) {
-            .meta-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 40px rgba(var(--acc-rgb), 0.5); }
-        }
-        .meta-btn:active { transform: scale(0.97); }
-
-        /* ===== TOAST ===== */
         .save-toast {
             position: fixed;
-            bottom: 36px;
+            bottom: 80px;
             left: 50%;
-            transform: translate(-50%, 16px);
-            background: rgba(20,20,22,0.94);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(var(--acc-rgb), 0.4);
-            color: #fff;
-            border-radius: 999px;
-            padding: 0.6rem 1.2rem;
-            font-family: inherit;
-            font-size: 0.78rem;
-            font-weight: 500;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            transform: translateX(-50%);
+            background: rgba(245,197,24,0.1);
+            border: 1px solid rgba(245,197,24,0.05);
+            padding: 0.4rem 1.2rem;
+            border-radius: 30px;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+            color: #f5c518;
             opacity: 0;
+            transition: all 0.5s ease;
             pointer-events: none;
             z-index: 100;
-            transition: opacity 300ms var(--ease), transform 400ms var(--ease);
+            backdrop-filter: blur(10px);
         }
-        .save-toast.show { opacity: 1; transform: translate(-50%, 0); }
-
+        .save-toast.show {
+            opacity: 1;
+            bottom: 100px;
+        }
         @media (max-width: 700px) {
-            .app { padding: 0.7rem; gap: 0.9rem; }
-            .video-wrapper { width: 100%; border-radius: 18px; }
-            .header { padding: 0.7rem 0.8rem; }
-            .header-brand .word { font-family: "Orbitron", sans-serif; font-size: 0.6rem; }
-            .header-status { display: none; }
-            .controls-wrapper { padding: 0.8rem 0.8rem 0.7rem 0.8rem; }
-            .controls-row button { font-size: 0.6rem; min-height: 30px; }
-            .controls-row .play-btn { width: 42px; height: 42px; min-width: 42px; min-height: 42px; }
-            .controls-row .play-btn svg { width: 18px; height: 18px; }
-            .controls-row .vol-btn { width: 32px; height: 32px; min-height: 32px; }
-            .controls-row .icon-btn { width: 32px; height: 32px; }
-            .vol-slider { width: 56px; }
-            .controls-row .time-display { font-family: "JetBrains Mono", monospace; font-size: 0.56rem; min-width: 66px; }
-            .center-play { width: 56px; height: 56px; }
+            .video-wrapper { width: 96%; border-radius: 8px; }
+            .header { padding: 0.6rem 1rem; }
+            .header-brand .fap, .header-brand .house { font-size: 0.75rem; }
+            .header-badge { font-size: 0.35rem; padding: 0.02rem 0.3rem; }
+            .controls-wrapper { padding: 0 0.8rem 0.8rem 0.8rem; }
+            .controls-row button { font-size: 0.45rem; min-height: 24px; padding: 0.15rem 0.3rem; }
+            .controls-row .play-btn { font-size: 0.5rem; padding: 0.15rem 0.8rem; min-width: 44px; }
+            .controls-row .time-display { font-size: 0.38rem; min-width: 50px; }
+            .controls-row .seek-btn { font-size: 0.38rem; }
+            .controls-row .fs-btn { font-size: 0.38rem; }
+            .center-play { width: 50px; height: 50px; }
             .center-play svg { width: 22px; height: 22px; }
-            .meta { width: 100%; flex-direction: column; align-items: flex-start; gap: 0.6rem; }
-            .meta-title { font-family: "Orbitron", sans-serif; max-width: 100%; }
-            .meta-actions { width: 100%; }
-            .meta-btn { font-family: "Orbitron", sans-serif; flex: 1; text-align: center; }
-            .save-toast { bottom: 20px; }
+            .back-btn { font-size: 0.35rem; padding: 0.1rem 0.6rem; min-height: 20px; }
+            .progress-section { padding: 0.2rem 0 0.1rem 0; }
+            .save-toast { font-size: 0.45rem; padding: 0.3rem 0.8rem; bottom: 60px; }
+            .save-toast.show { bottom: 80px; }
         }
         @media (max-width: 450px) {
-            .controls-row .time-display { font-family: "JetBrains Mono", monospace; font-size: 0.52rem; min-width: 60px; }
-            .vol-slider { width: 40px; }
-            .quality-badge { font-family: "Orbitron", sans-serif; display: none; }
+            .center-play { width: 44px; height: 44px; }
+            .center-play svg { width: 18px; height: 18px; }
+            .controls-row .play-btn { font-size: 0.45rem; padding: 0.12rem 0.6rem; min-width: 38px; }
+            .controls-row .time-display { font-size: 0.35rem; min-width: 44px; }
         }
-        @media (orientation: landscape) and (max-height: 520px) {
-            .app { gap: 0.6rem; padding: 0.6rem; }
-            .video-wrapper { width: min(86vw, 92vh * 16/9); }
-            .meta { width: min(86vw, 92vh * 16/9); }
-            .controls-wrapper { padding: 0.6rem 0.9rem 0.5rem 0.9rem; }
-            .controls-row button { min-height: 26px; }
-            .controls-row .play-btn { width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
-            .controls-row .play-btn svg { width: 16px; height: 16px; }
-            .controls-row .icon-btn { width: 28px; height: 28px; }
-            .controls-row .vol-btn { width: 28px; height: 28px; min-height: 28px; }
-            .vol-slider { width: 44px; }
-            .meta { display: none; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .video-wrapper, .meta { animation: none; opacity: 1; transform: none; }
-            .header-status .dot { animation: none; }
+        @media (orientation: landscape) and (max-height: 500px) {
+            .video-wrapper { width: 85%; max-height: 85vh; }
+            .header { padding: 0.4rem 1rem; }
+            .header-brand .fap, .header-brand .house { font-size: 0.7rem; }
+            .controls-wrapper { padding: 0 1rem 0.6rem 1rem; }
+            .controls-row button { font-size: 0.4rem; min-height: 20px; padding: 0.1rem 0.25rem; }
+            .controls-row .play-btn { font-size: 0.45rem; padding: 0.1rem 0.6rem; min-width: 36px; }
+            .controls-row .time-display { font-size: 0.35rem; min-width: 40px; }
+            .center-play { width: 40px; height: 40px; }
+            .center-play svg { width: 16px; height: 16px; }
+            .back-btn { font-size: 0.3rem; padding: 0.1rem 0.4rem; min-height: 16px; }
+            .progress-section { padding: 0.15rem 0 0.05rem 0; }
+            .progress-track { height: 2px; }
         }
     </style>
 </head>
 <body>
-<div class="bg-glow"></div>
 <div class="app">
     <div class="video-wrapper" id="videoWrapper">
         <video id="player" class="video-js vjs-default-skin" controls autoplay preload="auto" style="width:100%;height:100%;">
@@ -2034,17 +1844,14 @@ PLAYER_PAGE_HTML = r"""
         </video>
         <div class="header" id="header">
             <div class="header-brand">
-                <span class="word">FAP<span class="dot">HOUSE</span></span>
+                <span class="fap">FAP</span>
+                <span class="house">HOUSE</span>
                 <span class="header-badge">18+</span>
             </div>
-            <div class="header-right">
-                <span class="quality-badge live" id="qualityBadge">HD · LIVE</span>
-                <span class="header-status"><span class="dot"></span> Streaming</span>
-                <a href="/" class="back-btn">Back</a>
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+                <span class="header-status"><span class="dot"></span> live</span>
+                <a href="/" class="back-btn">back</a>
             </div>
-        </div>
-        <div class="buffering-overlay" id="bufferingOverlay">
-            <div class="buffering-spinner"></div>
         </div>
         <button class="center-play" id="centerPlayBtn">
             <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
@@ -2057,41 +1864,17 @@ PLAYER_PAGE_HTML = r"""
                 </div>
             </div>
             <div class="controls-row">
-                <button class="seek-btn" id="seekBack">−10</button>
-                <button class="play-btn" id="playPauseBtn">
-                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-                    <svg class="icon-pause" viewBox="0 0 24 24"><rect x="5" y="3" width="5" height="18" rx="1"/><rect x="14" y="3" width="5" height="18" rx="1"/></svg>
-                </button>
-                <div class="volume-group">
-                    <button class="vol-btn" id="volBtn">
-                        <svg class="icon-vol" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
-                        <svg class="icon-mute" viewBox="0 0 24 24" style="display:none"><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="16" y1="9" x2="22" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                    </button>
-                    <div class="vol-slider" id="volSlider">
-                        <div class="vol-fill" id="volFill"></div>
-                    </div>
-                </div>
+                <button class="seek-btn" id="seekBack">-10</button>
+                <button class="play-btn" id="playPauseBtn">play</button>
                 <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
                 <button class="seek-btn" id="seekForward">+10</button>
-                <button class="fs-btn icon-btn" id="fullscreenBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>
-                </button>
+                <button class="fs-btn" id="fullscreenBtn">full</button>
             </div>
-        </div>
-    </div>
-
-    <div class="meta">
-        <div style="min-width:0;">
-            <div class="meta-title" id="videoTitle"><span class="a">FAP</span>HOUSE VIDEO</div>
-            <div class="meta-caption">Saved to your library automatically on playback</div>
-        </div>
-        <div class="meta-actions">
-            <a href="/" class="meta-btn">← Back</a>
         </div>
     </div>
 </div>
 
-<div class="save-toast" id="saveToast">Added to library</div>
+<div class="save-toast" id="saveToast">📚 Added to library</div>
 
 <script src="https://vjs.zencdn.net/8.0.0/video.min.js"></script>
 <script>
@@ -2118,7 +1901,7 @@ PLAYER_PAGE_HTML = r"""
                 video.watchedAt = new Date().toISOString();
                 library.unshift(video);
                 saveLibrary(platform, library);
-                showToast('Added to ' + platform + ' library');
+                showToast('📚 Added to ' + platform + ' library');
                 return true;
             }
             return false;
@@ -2147,8 +1930,6 @@ PLAYER_PAGE_HTML = r"""
         if (!videoTitle || videoTitle.length < 3) {
             videoTitle = 'Faphouse Video';
         }
-        const videoTitleEl = document.getElementById('videoTitle');
-        if (videoTitleEl) videoTitleEl.textContent = videoTitle;
         
         let saved = false;
         
@@ -2196,15 +1977,6 @@ PLAYER_PAGE_HTML = r"""
         const header = document.getElementById('header');
         const clickOverlay = document.getElementById('clickOverlay');
         const videoWrapper = document.getElementById('videoWrapper');
-        const bufferingOverlay = document.getElementById('bufferingOverlay');
-        const volBtn = document.getElementById('volBtn');
-        const volSlider = document.getElementById('volSlider');
-        const volFill = document.getElementById('volFill');
-        const qualityBadge = document.getElementById('qualityBadge');
-        const bufferedBar = document.createElement('div');
-        bufferedBar.className = 'progress-buffer';
-        progressTrack.appendChild(bufferedBar);
-        progressTrack.appendChild(progressFill);
         
         function formatTime(seconds) {
             if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
@@ -2219,15 +1991,9 @@ PLAYER_PAGE_HTML = r"""
             if (duration) {
                 timeDisplay.textContent = formatTime(currentTime) + ' / ' + formatTime(duration);
                 progressFill.style.width = ((currentTime / duration) * 100) + '%';
-                const buffered = player.buffered();
-                if (buffered && buffered.length > 0) {
-                    const bufferedEnd = buffered.end(buffered.length - 1);
-                    bufferedBar.style.width = Math.min(100, (bufferedEnd / duration) * 100) + '%';
-                }
             } else {
                 timeDisplay.textContent = '0:00 / 0:00';
                 progressFill.style.width = '0%';
-                bufferedBar.style.width = '0%';
             }
         }
         
@@ -2262,12 +2028,12 @@ PLAYER_PAGE_HTML = r"""
         function togglePlayPause() {
             if (player.paused()) {
                 player.play();
-                playPauseBtn.classList.add('playing');
+                playPauseBtn.textContent = 'pause';
                 centerPlayBtn.classList.remove('visible');
                 if (controlsVisible) hideControlsDelayed();
             } else {
                 player.pause();
-                playPauseBtn.classList.remove('playing');
+                playPauseBtn.textContent = 'play';
                 centerPlayBtn.classList.add('visible');
                 showControls();
                 clearTimeout(controlsTimeout);
@@ -2366,106 +2132,30 @@ PLAYER_PAGE_HTML = r"""
         });
         
         player.on('timeupdate', updateTimeDisplay);
-        player.on('loadedmetadata', function() {
-            updateTimeDisplay();
-            const videoEl = player.el().querySelector('video');
-            if (videoEl && videoEl.videoHeight) {
-                if (videoEl.videoHeight >= 1080) qualityBadge.textContent = 'FHD · 1080P';
-                else if (videoEl.videoHeight >= 720) qualityBadge.textContent = 'HD · 720P';
-                else if (videoEl.videoHeight >= 480) qualityBadge.textContent = 'SD · 480P';
-            }
-        });
-        player.on('progress', updateTimeDisplay);
-        player.on('waiting', function() {
-            bufferingOverlay.classList.add('visible');
-        });
-        player.on('playing', function() {
-            bufferingOverlay.classList.remove('visible');
-        });
-        player.on('canplay', function() {
-            bufferingOverlay.classList.remove('visible');
-        });
+        player.on('loadedmetadata', updateTimeDisplay);
         player.on('play', function() {
-            playPauseBtn.classList.add('playing');
+            playPauseBtn.textContent = 'pause';
             centerPlayBtn.classList.remove('visible');
             showControls();
             hideControlsDelayed();
         });
         player.on('pause', function() {
-            playPauseBtn.classList.remove('playing');
+            playPauseBtn.textContent = 'play';
             centerPlayBtn.classList.add('visible');
             showControls();
             clearTimeout(controlsTimeout);
         });
         player.on('ended', function() {
-            playPauseBtn.classList.remove('playing');
+            playPauseBtn.textContent = 'play';
             centerPlayBtn.classList.add('visible');
             showControls();
             clearTimeout(controlsTimeout);
         });
         
-        // ===== VOLUME CONTROL =====
-        function updateVolumeUI() {
-            const vol = player.volume();
-            const muted = player.muted();
-            volFill.style.width = (muted ? 0 : vol * 100) + '%';
-            const iconVol = volBtn.querySelector('.icon-vol');
-            const iconMute = volBtn.querySelector('.icon-mute');
-            if (muted || vol === 0) {
-                volBtn.classList.add('muted');
-                iconVol.style.display = 'none';
-                iconMute.style.display = 'block';
-            } else {
-                volBtn.classList.remove('muted');
-                iconVol.style.display = 'block';
-                iconMute.style.display = 'none';
-            }
-        }
-        
-        volBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            player.muted(!player.muted());
-            updateVolumeUI();
-            showControls();
-            if (!player.paused()) hideControlsDelayed();
-        });
-        
-        function setVolumeFromEvent(e) {
-            const rect = volSlider.getBoundingClientRect();
-            const x = e.clientX !== undefined ? e.clientX : e.touches[0].clientX;
-            let pos = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
-            player.muted(false);
-            if (pos === 0) player.muted(true);
-            player.volume(pos);
-            updateVolumeUI();
-        }
-        
-        volSlider.addEventListener('click', function(e) {
-            e.stopPropagation();
-            setVolumeFromEvent(e);
-        });
-        
-        volSlider.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            setVolumeFromEvent(e);
-        }, { passive: false });
-        
-        volSlider.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-            setVolumeFromEvent(e);
-        }, { passive: false });
-        
-        player.on('volumechange', updateVolumeUI);
-        updateVolumeUI();
-        
         document.addEventListener('keydown', function(e) {
             if (e.key === ' ' || e.key === 'Space') { e.preventDefault(); togglePlayPause(); }
             if (e.key === 'ArrowLeft') { e.preventDefault(); seekBack.click(); }
             if (e.key === 'ArrowRight') { e.preventDefault(); seekForward.click(); }
-            if (e.key === 'm' || e.key === 'M') { e.preventDefault(); volBtn.click(); }
-            if (e.key === 'ArrowUp') { e.preventDefault(); player.muted(false); player.volume(Math.min(1, player.volume() + 0.1)); updateVolumeUI(); }
-            if (e.key === 'ArrowDown') { e.preventDefault(); player.volume(Math.max(0, player.volume() - 0.1)); updateVolumeUI(); }
             if (e.key === 'f' || e.key === 'F') { e.preventDefault(); fullscreenBtn.click(); }
         });
         
@@ -2721,244 +2411,97 @@ TERABOX_PLAYER_HTML = """
 </html>
 """
 
-ERROR_PAGE_HTML = r"""
+ERROR_PAGE_HTML = """
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Error · Faphouse Player</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            background: #000000;
-            font-family: "Unbounded", sans-serif;
-            color: #f5f0e6;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        body { 
+            background: #0a0a0a; 
+            font-family: Arial, sans-serif;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh;
+            padding: 20px;
         }
-        .bg-glow {
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse at 50% 40%, rgba(245,197,24,0.02), transparent 70%);
-            pointer-events: none;
-        }
-        .bg-orb {
-            position: absolute;
-            width: 40vmax;
-            height: 40vmax;
-            border-radius: 50%;
-            filter: blur(90px);
-            pointer-events: none;
-        }
-        .bg-orb.orb-a {
-            top: -20%;
-            left: -15%;
-            background: radial-gradient(circle, rgba(245,197,24,0.04) 0%, transparent 65%);
-            animation: driftA 26s ease-in-out infinite alternate;
-        }
-        .bg-orb.orb-b {
-            bottom: -25%;
-            right: -18%;
-            background: radial-gradient(circle, rgba(255,68,68,0.035) 0%, transparent 65%);
-            animation: driftB 30s ease-in-out infinite alternate;
-        }
-        @keyframes driftA {
-            0%   { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(7vmax, 6vmax) scale(1.12); }
-        }
-        @keyframes driftB {
-            0%   { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(-6vmax, -5vmax) scale(0.92); }
-        }
-        .error-card {
-            position: relative;
-            width: 92%;
-            max-width: 460px;
-            padding: 3rem 2.5rem;
-            background: rgba(8,8,8,0.8);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.03);
-            border-radius: 20px;
+        .error-container {
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            background: #111;
+            border-radius: 16px;
+            border: 1px solid #222;
             text-align: center;
-            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-            animation: cardIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        @keyframes cardIn {
-            0% { opacity: 0; transform: translateY(24px) scale(0.96); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .error-code {
-            font-size: 4.5rem;
-            font-weight: 900;
-            line-height: 1;
-            background: linear-gradient(135deg, #ff4444, #b02a2a);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.03em;
-            margin-bottom: 0.3rem;
-            filter: drop-shadow(0 0 30px rgba(255,68,68,0.15));
-        }
-        .error-label {
-            font-family: "JetBrains Mono", monospace;
-            font-size: 0.5rem;
-            letter-spacing: 0.4em;
-            text-transform: uppercase;
-            color: #3d3930;
-            margin-bottom: 1.8rem;
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
         }
         .error-title {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #f5f0e6;
-            margin-bottom: 0.8rem;
-            letter-spacing: 0.02em;
+            color: #ff4444;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
         }
         .error-message {
-            font-family: "JetBrains Mono", monospace;
-            font-size: 0.6rem;
-            line-height: 1.9;
-            color: #6b6558;
-            margin-bottom: 2rem;
+            color: #888;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
         }
         .error-message .highlight {
-            color: #f5c518;
-        }
-        .btn-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
+            color: #00b4d8;
         }
         .back-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            background: #f5c518;
-            border: none;
-            color: #000000;
+            display: inline-block;
+            padding: 10px 30px;
+            background: #00b4d8;
+            color: #000;
             text-decoration: none;
-            padding: 0.7rem 2.2rem;
-            border-radius: 60px;
-            font-family: "Unbounded", sans-serif;
-            font-weight: 700;
-            font-size: 0.6rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 0 0 0 rgba(245,197,24,0.2);
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.3s;
         }
         .back-btn:hover {
-            transform: scale(0.97);
-            box-shadow: 0 0 30px rgba(245,197,24,0.2);
-        }
-        .back-btn:active { transform: scale(0.92); }
-        .retry-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.05);
-            color: #3d3930;
-            text-decoration: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 60px;
-            font-family: "Unbounded", sans-serif;
-            font-size: 0.55rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .retry-btn:hover {
-            color: #8a8477;
-            border-color: rgba(255,255,255,0.1);
+            background: #48cae4;
+            transform: scale(0.98);
         }
         .error-details {
-            margin-top: 1.6rem;
-            padding: 0.8rem 1rem;
-            background: rgba(255,255,255,0.01);
-            border: 1px solid rgba(255,255,255,0.02);
-            border-radius: 10px;
-            font-size: 0.5rem;
-            color: #3a362e;
+            margin-top: 15px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #555;
             word-break: break-all;
-            font-family: "JetBrains Mono", monospace;
-            text-align: left;
         }
         .error-details .label {
-            color: #6b6558;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-size: 0.42rem;
-            display: block;
-            margin-bottom: 0.4rem;
+            color: #444;
+            font-weight: bold;
         }
         .error-details .value {
-            color: #8a8477;
-            line-height: 1.6;
-        }
-        .footer-hint {
-            position: fixed;
-            bottom: 1.5rem;
-            left: 0;
-            right: 0;
-            text-align: center;
-            z-index: 10;
-            font-family: "JetBrains Mono", monospace;
-            font-size: 0.4rem;
-            color: #1a1814;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-        }
-        @media (max-width: 500px) {
-            .error-card { padding: 2.2rem 1.5rem; }
-            .error-code { font-size: 3.5rem; }
-            .btn-row { flex-direction: column; }
-            .back-btn, .retry-btn { width: 100%; }
+            color: #777;
         }
     </style>
 </head>
 <body>
-    <div class="bg-glow"></div>
-    <div class="bg-orb orb-a"></div>
-    <div class="bg-orb orb-b"></div>
-    
-    <div class="error-card">
-        <div class="error-code">!</div>
-        <div class="error-label">stream error</div>
+    <div class="error-container">
+        <div class="error-icon">❌</div>
         <div class="error-title">{{ error_title }}</div>
         <div class="error-message">{{ error_message }}</div>
-        <div class="btn-row">
-            <a href="/" class="back-btn">← go home</a>
-            <button class="retry-btn" onclick="history.back()">retry</button>
-        </div>
+        <a href="/" class="back-btn">← Go Home</a>
         {% if error_detail %}
         <div class="error-details">
-            <span class="label">details</span>
+            <span class="label">Details:</span>
             <span class="value">{{ error_detail }}</span>
         </div>
         {% endif %}
     </div>
-    
-    <div class="footer-hint">faphouse + terabox · premium webplayer</div>
 </body>
 </html>
 """
@@ -3116,21 +2659,18 @@ def handler(request, context):
 if __name__ == "__main__":
     print(f"""
 {'='*70}
-Faphouse + Terabox Player · Premium UI
+Faphouse + Terabox Player API with Collapsible Library
 {'='*70}
 
 Features:
   • Faphouse: Logs in and extracts M3U8 URLs (Video.js player)
   • Terabox: Extracts proxy URL and embeds in iframe
-  • ✨ Ambient animated backgrounds (orbs, grid, vignette)
   • 📚 Collapsible library sidebar (hamburger menu button)
   • 📝 Separate libraries for each platform
   • 🔄 Click library items to replay videos
-  • 🔈 Volume control, mute + keyboard shortcuts (M, ↑, ↓)
-  • ⏳ Buffering indicator + buffered progress bar
-  • 🎞 Auto quality badge (SD/HD/FHD based on stream)
-  • 🌀 Premium loading states (button spinner, secure-stream)
-  • 🎨 Consistent glassmorphism design across all pages
+  • ❌ Remove individual videos or clear library per platform
+  • 🔴 Live badge count on library button
+  • Premium 18+ webplayer UI with dual platform support
 
 Endpoints:
   /play?url=URL         - Faphouse video player (Video.js)
