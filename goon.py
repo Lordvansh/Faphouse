@@ -527,6 +527,59 @@ MAIN_PAGE_HTML = """
                 linear-gradient(rgba(0,180,216,0.008) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0,180,216,0.008) 1px, transparent 1px);
         }
+        .bg-orb {
+            position: absolute;
+            width: 45vmax;
+            height: 45vmax;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+            transition: background 0.8s ease;
+            will-change: transform;
+        }
+        .bg-orb.orb-a {
+            top: -20%;
+            left: -15%;
+            background: radial-gradient(circle, rgba(245,197,24,0.05) 0%, transparent 65%);
+            animation: driftA 26s ease-in-out infinite alternate;
+        }
+        .bg-orb.orb-b {
+            bottom: -25%;
+            right: -18%;
+            background: radial-gradient(circle, rgba(180,120,0,0.04) 0%, transparent 65%);
+            animation: driftB 32s ease-in-out infinite alternate;
+        }
+        .bg-orb.orb-c {
+            top: 30%;
+            right: -10%;
+            width: 30vmax;
+            height: 30vmax;
+            background: radial-gradient(circle, rgba(245,197,24,0.03) 0%, transparent 70%);
+            animation: driftC 22s ease-in-out infinite alternate;
+        }
+        .bg-orb.terabox-orb {
+            background: radial-gradient(circle, rgba(0,180,216,0.06) 0%, transparent 65%);
+        }
+        @keyframes driftA {
+            0%   { transform: translate(0, 0) scale(1); }
+            50%  { transform: translate(8vmax, 5vmax) scale(1.15); }
+            100% { transform: translate(-4vmax, 9vmax) scale(0.9); }
+        }
+        @keyframes driftB {
+            0%   { transform: translate(0, 0) scale(1.05); }
+            50%  { transform: translate(-7vmax, -4vmax) scale(0.9); }
+            100% { transform: translate(5vmax, -8vmax) scale(1.2); }
+        }
+        @keyframes driftC {
+            0%   { transform: translate(0, 0) scale(0.95); }
+            100% { transform: translate(-9vmax, 3vmax) scale(1.1); }
+        }
+        .bg-vignette {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+        }
         .brand-container {
             text-align: center;
             margin-bottom: 2.5rem;
@@ -764,14 +817,39 @@ MAIN_PAGE_HTML = """
             letter-spacing: 0.05em;
             text-transform: uppercase;
             white-space: nowrap;
+            position: relative;
+            box-shadow: 0 0 0 0 rgba(245,197,24,0.2);
         }
-        .input-wrapper .btn-load:hover { transform: scale(0.96); }
+        .input-wrapper .btn-load:hover {
+            transform: scale(0.96);
+            box-shadow: 0 0 30px rgba(245,197,24,0.15);
+        }
         .input-wrapper .btn-load:active { transform: scale(0.92); }
+        .input-wrapper .btn-load.loading {
+            pointer-events: none;
+            opacity: 0.85;
+            color: transparent;
+        }
+        .input-wrapper .btn-load.loading::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(0,0,0,0.25);
+            border-top-color: #000000;
+            border-radius: 50%;
+            animation: btnSpin 0.7s linear infinite;
+        }
+        @keyframes btnSpin { to { transform: rotate(360deg); } }
         .input-wrapper .btn-load.terabox-mode {
             background: #00b4d8;
+            box-shadow: 0 0 0 0 rgba(0,180,216,0.2);
         }
         .input-wrapper .btn-load.terabox-mode:hover {
             background: #48cae4;
+            box-shadow: 0 0 30px rgba(0,180,216,0.2);
         }
         .input-example {
             margin-top: 1rem;
@@ -1108,6 +1186,10 @@ MAIN_PAGE_HTML = """
     <div class="page-paste" id="pagePaste">
         <div class="bg-glow" id="bgGlow"></div>
         <div class="bg-grid" id="bgGrid"></div>
+        <div class="bg-orb orb-a" id="orbA"></div>
+        <div class="bg-orb orb-b" id="orbB"></div>
+        <div class="bg-orb orb-c" id="orbC"></div>
+        <div class="bg-vignette"></div>
         <div class="brand-container">
             <div class="logo-wrapper" id="logoWrapper">
                 <div class="logo-faphouse active" id="logoFaphouse">
@@ -1352,6 +1434,15 @@ MAIN_PAGE_HTML = """
         clearLibrary(currentPlatform);
     });
     
+    // ===== LOADING STATE =====
+    urlForm.addEventListener('submit', function() {
+        loadBtn.classList.add('loading');
+        loadBtn.textContent = currentPlatform === 'faphouse' ? 'loading' : 'extracting';
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+        videoUrlInput.focus();
+    });
+    
     // ===== UI FUNCTIONS =====
     document.getElementById('enterBtn').addEventListener('click', function() {
         document.getElementById('splashOverlay').classList.add('hidden');
@@ -1375,6 +1466,9 @@ MAIN_PAGE_HTML = """
     const urlForm = document.getElementById('urlForm');
     const exampleFaphouse = document.getElementById('exampleFaphouse');
     const exampleTerabox = document.getElementById('exampleTerabox');
+    const orbA = document.getElementById('orbA');
+    const orbB = document.getElementById('orbB');
+    const orbC = document.getElementById('orbC');
     
     let currentPlatform = 'faphouse';
     
@@ -1394,6 +1488,9 @@ MAIN_PAGE_HTML = """
             pasteFooter.classList.remove('terabox-footer');
             bgGlow.classList.remove('terabox-glow');
             bgGrid.classList.remove('terabox-grid');
+            orbA.classList.remove('terabox-orb');
+            orbB.classList.remove('terabox-orb');
+            orbC.classList.remove('terabox-orb');
             inputWrapper.classList.remove('terabox-mode');
             loadBtn.classList.remove('terabox-mode');
             videoUrlInput.placeholder = 'https://faphouse2.com/videos/...';
@@ -1410,6 +1507,9 @@ MAIN_PAGE_HTML = """
             pasteFooter.classList.add('terabox-footer');
             bgGlow.classList.add('terabox-glow');
             bgGrid.classList.add('terabox-grid');
+            orbA.classList.add('terabox-orb');
+            orbB.classList.add('terabox-orb');
+            orbC.classList.add('terabox-orb');
             inputWrapper.classList.add('terabox-mode');
             loadBtn.classList.add('terabox-mode');
             videoUrlInput.placeholder = 'https://terafileshare.com/s/...';
@@ -1491,7 +1591,7 @@ MAIN_PAGE_HTML = """
 </html>
 """
 
-PLAYER_PAGE_HTML = """
+PLAYER_PAGE_HTML = r"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1684,6 +1784,16 @@ PLAYER_PAGE_HTML = """
             position: relative;
             transition: width 0.1s ease;
         }
+        .progress-buffer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: rgba(255,255,255,0.18);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
         .progress-fill::after {
             content: '';
             position: absolute;
@@ -1724,25 +1834,6 @@ PLAYER_PAGE_HTML = """
             touch-action: manipulation;
         }
         .controls-row button:active { transform: scale(0.92); color: #ffffff; }
-        .controls-row .play-btn {
-            font-family: "Unbounded", sans-serif;
-            font-size: 0.6rem;
-            color: #ffffff;
-            padding: 0.2rem 1.2rem;
-            border: 1px solid rgba(255,255,255,0.04);
-            border-radius: 30px;
-            min-width: 54px;
-            background: rgba(255,255,255,0.01);
-        }
-        .controls-row .play-btn:hover {
-            background: rgba(255,255,255,0.03);
-            border-color: rgba(255,255,255,0.06);
-        }
-        .controls-row .play-btn:active {
-            background: rgba(255,215,0,0.04);
-            border-color: rgba(255,215,0,0.06);
-            transform: scale(0.95);
-        }
         .controls-row .seek-btn {
             font-size: 0.45rem;
             color: rgba(255,255,255,0.3);
@@ -1768,6 +1859,136 @@ PLAYER_PAGE_HTML = """
             min-height: 24px;
         }
         .controls-row .fs-btn:hover { color: rgba(255,255,255,0.6); }
+        .controls-row .icon-btn {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .controls-row .icon-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        .controls-row .play-btn {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+            padding: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .controls-row .play-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            display: none;
+        }
+        .controls-row .play-btn svg.icon-play { margin-left: 2px; }
+        .controls-row .play-btn.playing svg.icon-pause { display: block; }
+        .controls-row .play-btn.playing svg.icon-play { display: none; }
+        .controls-row .play-btn:not(.playing) svg.icon-play { display: block; }
+        .controls-row .play-btn:hover {
+            background: rgba(245,215,0,0.08);
+            border-color: rgba(245,215,0,0.2);
+        }
+        .volume-group {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .controls-row .vol-btn {
+            width: 30px;
+            height: 30px;
+            min-height: 30px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.45);
+        }
+        .controls-row .vol-btn svg {
+            width: 15px;
+            height: 15px;
+            fill: currentColor;
+        }
+        .controls-row .vol-btn.muted { color: rgba(255,255,255,0.15); }
+        .controls-row .vol-btn:hover { color: rgba(255,255,255,0.85); }
+        .vol-slider {
+            width: 64px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.12);
+            cursor: pointer;
+            position: relative;
+            transition: width 0.25s ease;
+        }
+        .vol-slider .vol-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #f5c518, #d4a800);
+            border-radius: 3px;
+            position: relative;
+        }
+        .vol-slider .vol-fill::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: -3px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #f5c518;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .vol-slider:hover .vol-fill::after { opacity: 1; }
+        .buffering-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 11;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.25);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+        .buffering-overlay.visible { opacity: 1; pointer-events: auto; }
+        .buffering-spinner {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.08);
+            border-top-color: #f5c518;
+            animation: buffSpin 0.8s linear infinite;
+        }
+        @keyframes buffSpin { to { transform: rotate(360deg); } }
+        .quality-badge {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.35rem;
+            letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.35);
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+            padding: 0.1rem 0.45rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .quality-badge.live {
+            color: rgba(245,197,24,0.8);
+            border-color: rgba(245,197,24,0.15);
+            background: rgba(245,197,24,0.04);
+        }
         .click-overlay {
             position: absolute;
             inset: 0;
@@ -1803,7 +2024,12 @@ PLAYER_PAGE_HTML = """
             .header-badge { font-size: 0.35rem; padding: 0.02rem 0.3rem; }
             .controls-wrapper { padding: 0 0.8rem 0.8rem 0.8rem; }
             .controls-row button { font-size: 0.45rem; min-height: 24px; padding: 0.15rem 0.3rem; }
-            .controls-row .play-btn { font-size: 0.5rem; padding: 0.15rem 0.8rem; min-width: 44px; }
+            .controls-row .play-btn { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+            .controls-row .play-btn svg { width: 16px; height: 16px; }
+            .controls-row .vol-btn { width: 26px; height: 26px; min-height: 26px; }
+            .controls-row .icon-btn { width: 28px; height: 28px; }
+            .controls-row .icon-btn svg { width: 13px; height: 13px; }
+            .vol-slider { width: 48px; }
             .controls-row .time-display { font-size: 0.38rem; min-width: 50px; }
             .controls-row .seek-btn { font-size: 0.38rem; }
             .controls-row .fs-btn { font-size: 0.38rem; }
@@ -1813,12 +2039,16 @@ PLAYER_PAGE_HTML = """
             .progress-section { padding: 0.2rem 0 0.1rem 0; }
             .save-toast { font-size: 0.45rem; padding: 0.3rem 0.8rem; bottom: 60px; }
             .save-toast.show { bottom: 80px; }
+            .buffering-spinner { width: 36px; height: 36px; }
         }
         @media (max-width: 450px) {
             .center-play { width: 44px; height: 44px; }
             .center-play svg { width: 18px; height: 18px; }
-            .controls-row .play-btn { font-size: 0.45rem; padding: 0.12rem 0.6rem; min-width: 38px; }
+            .controls-row .play-btn { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
+            .controls-row .play-btn svg { width: 14px; height: 14px; }
             .controls-row .time-display { font-size: 0.35rem; min-width: 44px; }
+            .vol-slider { width: 34px; }
+            .quality-badge { display: none; }
         }
         @media (orientation: landscape) and (max-height: 500px) {
             .video-wrapper { width: 85%; max-height: 85vh; }
@@ -1849,9 +2079,13 @@ PLAYER_PAGE_HTML = """
                 <span class="header-badge">18+</span>
             </div>
             <div style="display:flex; align-items:center; gap:0.6rem;">
-                <span class="header-status"><span class="dot"></span> live</span>
+                <span class="quality-badge live" id="qualityBadge">HD · LIVE</span>
+                <span class="header-status"><span class="dot"></span> streaming</span>
                 <a href="/" class="back-btn">back</a>
             </div>
+        </div>
+        <div class="buffering-overlay" id="bufferingOverlay">
+            <div class="buffering-spinner"></div>
         </div>
         <button class="center-play" id="centerPlayBtn">
             <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
@@ -1865,10 +2099,24 @@ PLAYER_PAGE_HTML = """
             </div>
             <div class="controls-row">
                 <button class="seek-btn" id="seekBack">-10</button>
-                <button class="play-btn" id="playPauseBtn">play</button>
+                <button class="play-btn" id="playPauseBtn">
+                    <svg class="icon-play" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                    <svg class="icon-pause" viewBox="0 0 24 24"><rect x="5" y="3" width="5" height="18" rx="1"/><rect x="14" y="3" width="5" height="18" rx="1"/></svg>
+                </button>
+                <div class="volume-group">
+                    <button class="vol-btn" id="volBtn">
+                        <svg class="icon-vol" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
+                        <svg class="icon-mute" viewBox="0 0 24 24" style="display:none"><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="16" y1="9" x2="22" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                    <div class="vol-slider" id="volSlider">
+                        <div class="vol-fill" id="volFill"></div>
+                    </div>
+                </div>
                 <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
                 <button class="seek-btn" id="seekForward">+10</button>
-                <button class="fs-btn" id="fullscreenBtn">full</button>
+                <button class="fs-btn icon-btn" id="fullscreenBtn">
+                    <svg viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -1977,6 +2225,15 @@ PLAYER_PAGE_HTML = """
         const header = document.getElementById('header');
         const clickOverlay = document.getElementById('clickOverlay');
         const videoWrapper = document.getElementById('videoWrapper');
+        const bufferingOverlay = document.getElementById('bufferingOverlay');
+        const volBtn = document.getElementById('volBtn');
+        const volSlider = document.getElementById('volSlider');
+        const volFill = document.getElementById('volFill');
+        const qualityBadge = document.getElementById('qualityBadge');
+        const bufferedBar = document.createElement('div');
+        bufferedBar.className = 'progress-buffer';
+        progressTrack.appendChild(bufferedBar);
+        progressTrack.appendChild(progressFill);
         
         function formatTime(seconds) {
             if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
@@ -1991,9 +2248,15 @@ PLAYER_PAGE_HTML = """
             if (duration) {
                 timeDisplay.textContent = formatTime(currentTime) + ' / ' + formatTime(duration);
                 progressFill.style.width = ((currentTime / duration) * 100) + '%';
+                const buffered = player.buffered();
+                if (buffered && buffered.length > 0) {
+                    const bufferedEnd = buffered.end(buffered.length - 1);
+                    bufferedBar.style.width = Math.min(100, (bufferedEnd / duration) * 100) + '%';
+                }
             } else {
                 timeDisplay.textContent = '0:00 / 0:00';
                 progressFill.style.width = '0%';
+                bufferedBar.style.width = '0%';
             }
         }
         
@@ -2028,12 +2291,12 @@ PLAYER_PAGE_HTML = """
         function togglePlayPause() {
             if (player.paused()) {
                 player.play();
-                playPauseBtn.textContent = 'pause';
+                playPauseBtn.classList.add('playing');
                 centerPlayBtn.classList.remove('visible');
                 if (controlsVisible) hideControlsDelayed();
             } else {
                 player.pause();
-                playPauseBtn.textContent = 'play';
+                playPauseBtn.classList.remove('playing');
                 centerPlayBtn.classList.add('visible');
                 showControls();
                 clearTimeout(controlsTimeout);
@@ -2132,30 +2395,106 @@ PLAYER_PAGE_HTML = """
         });
         
         player.on('timeupdate', updateTimeDisplay);
-        player.on('loadedmetadata', updateTimeDisplay);
+        player.on('loadedmetadata', function() {
+            updateTimeDisplay();
+            const videoEl = player.el().querySelector('video');
+            if (videoEl && videoEl.videoHeight) {
+                if (videoEl.videoHeight >= 1080) qualityBadge.textContent = 'FHD · 1080P';
+                else if (videoEl.videoHeight >= 720) qualityBadge.textContent = 'HD · 720P';
+                else if (videoEl.videoHeight >= 480) qualityBadge.textContent = 'SD · 480P';
+            }
+        });
+        player.on('progress', updateTimeDisplay);
+        player.on('waiting', function() {
+            bufferingOverlay.classList.add('visible');
+        });
+        player.on('playing', function() {
+            bufferingOverlay.classList.remove('visible');
+        });
+        player.on('canplay', function() {
+            bufferingOverlay.classList.remove('visible');
+        });
         player.on('play', function() {
-            playPauseBtn.textContent = 'pause';
+            playPauseBtn.classList.add('playing');
             centerPlayBtn.classList.remove('visible');
             showControls();
             hideControlsDelayed();
         });
         player.on('pause', function() {
-            playPauseBtn.textContent = 'play';
+            playPauseBtn.classList.remove('playing');
             centerPlayBtn.classList.add('visible');
             showControls();
             clearTimeout(controlsTimeout);
         });
         player.on('ended', function() {
-            playPauseBtn.textContent = 'play';
+            playPauseBtn.classList.remove('playing');
             centerPlayBtn.classList.add('visible');
             showControls();
             clearTimeout(controlsTimeout);
         });
         
+        // ===== VOLUME CONTROL =====
+        function updateVolumeUI() {
+            const vol = player.volume();
+            const muted = player.muted();
+            volFill.style.width = (muted ? 0 : vol * 100) + '%';
+            const iconVol = volBtn.querySelector('.icon-vol');
+            const iconMute = volBtn.querySelector('.icon-mute');
+            if (muted || vol === 0) {
+                volBtn.classList.add('muted');
+                iconVol.style.display = 'none';
+                iconMute.style.display = 'block';
+            } else {
+                volBtn.classList.remove('muted');
+                iconVol.style.display = 'block';
+                iconMute.style.display = 'none';
+            }
+        }
+        
+        volBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            player.muted(!player.muted());
+            updateVolumeUI();
+            showControls();
+            if (!player.paused()) hideControlsDelayed();
+        });
+        
+        function setVolumeFromEvent(e) {
+            const rect = volSlider.getBoundingClientRect();
+            const x = e.clientX !== undefined ? e.clientX : e.touches[0].clientX;
+            let pos = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+            player.muted(false);
+            if (pos === 0) player.muted(true);
+            player.volume(pos);
+            updateVolumeUI();
+        }
+        
+        volSlider.addEventListener('click', function(e) {
+            e.stopPropagation();
+            setVolumeFromEvent(e);
+        });
+        
+        volSlider.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setVolumeFromEvent(e);
+        }, { passive: false });
+        
+        volSlider.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            setVolumeFromEvent(e);
+        }, { passive: false });
+        
+        player.on('volumechange', updateVolumeUI);
+        updateVolumeUI();
+        
         document.addEventListener('keydown', function(e) {
             if (e.key === ' ' || e.key === 'Space') { e.preventDefault(); togglePlayPause(); }
             if (e.key === 'ArrowLeft') { e.preventDefault(); seekBack.click(); }
             if (e.key === 'ArrowRight') { e.preventDefault(); seekForward.click(); }
+            if (e.key === 'm' || e.key === 'M') { e.preventDefault(); volBtn.click(); }
+            if (e.key === 'ArrowUp') { e.preventDefault(); player.muted(false); player.volume(Math.min(1, player.volume() + 0.1)); updateVolumeUI(); }
+            if (e.key === 'ArrowDown') { e.preventDefault(); player.volume(Math.max(0, player.volume() - 0.1)); updateVolumeUI(); }
             if (e.key === 'f' || e.key === 'F') { e.preventDefault(); fullscreenBtn.click(); }
         });
         
@@ -2179,99 +2518,277 @@ PLAYER_PAGE_HTML = """
 </html>
 """
 
-TERABOX_PLAYER_HTML = """
+TERABOX_PLAYER_HTML = r"""
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Terabox Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Terabox · Player</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: #000; 
-            font-family: Arial, sans-serif;
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden;
-        }
-        .container { 
-            width: 100%;
+        html, body {
+            background: #0a0a0a;
+            font-family: "Unbounded", sans-serif;
+            color: #f5f0e6;
             height: 100vh;
-            background: #000;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            margin: 0;
+            padding: 0;
+        }
+        .app {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: #0a0a0a;
             display: flex;
             flex-direction: column;
-        }
-        .video-wrapper {
-            flex: 1;
-            width: 100%;
-            background: #000;
-            display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             overflow: hidden;
-            position: relative;
+            padding: 4.5rem 0 0 0;
         }
-        .video-wrapper iframe {
+        .bg-glow {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 40%, rgba(0,180,216,0.03), transparent 70%);
+            pointer-events: none;
+        }
+        .bg-orb {
+            position: absolute;
+            width: 40vmax;
+            height: 40vmax;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+        }
+        .bg-orb.orb-a {
+            top: -15%;
+            right: -10%;
+            background: radial-gradient(circle, rgba(0,180,216,0.05) 0%, transparent 65%);
+            animation: driftA 26s ease-in-out infinite alternate;
+        }
+        .bg-orb.orb-b {
+            bottom: -20%;
+            left: -15%;
+            background: radial-gradient(circle, rgba(0,119,182,0.04) 0%, transparent 65%);
+            animation: driftB 30s ease-in-out infinite alternate;
+        }
+        @keyframes driftA {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-7vmax, 6vmax) scale(1.15); }
+        }
+        @keyframes driftB {
+            0%   { transform: translate(0, 0) scale(1.05); }
+            100% { transform: translate(6vmax, -5vmax) scale(0.9); }
+        }
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 30;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, transparent 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-brand { display: flex; align-items: baseline; gap: 0.2rem; }
+        .header-brand .tera {
+            font-size: 0.9rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00b4d8, #0077b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-brand .box-text {
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: #f5f0e6;
+        }
+        .header-badge {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
+            font-weight: 700;
+            color: #00b4d8;
+            background: rgba(0,180,216,0.04);
+            border: 1px solid rgba(0,180,216,0.06);
+            padding: 0.02rem 0.4rem;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            margin-left: 0.2rem;
+        }
+        .header-right { display: flex; align-items: center; gap: 0.6rem; }
+        .header-status {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.35rem;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .header-status .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #00b4d8;
+            animation: pulse 1.5s infinite;
+            display: inline-block;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+        .back-btn {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.03);
+            color: rgba(255,255,255,0.3);
+            padding: 0.15rem 0.8rem;
+            border-radius: 30px;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            text-decoration: none;
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+            touch-action: manipulation;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6); }
+        .player-frame {
+            position: relative;
+            width: 90%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            background: #000000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(0,180,216,0.02), 0 20px 60px rgba(0,0,0,0.9);
+        }
+        .player-frame iframe {
             width: 100%;
             height: 100%;
             border: none;
             background: #000;
+            display: block;
+            opacity: 0;
+            transition: opacity 0.6s ease;
         }
-        .info {
-            padding: 10px 16px;
-            background: #111;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            border-top: 1px solid #1a1a1a;
-            flex-shrink: 0;
-        }
-        .info .file-info {
-            color: #555;
-            font-size: 12px;
-            font-family: Arial, sans-serif;
-        }
-        .info .file-info span { color: #888; }
-        .back-btn {
-            color: #00b4d8;
-            text-decoration: none;
-            padding: 4px 14px;
-            border: 1px solid #00b4d8;
-            border-radius: 20px;
-            font-size: 12px;
-            font-family: Arial, sans-serif;
-            transition: all 0.3s;
-        }
-        .back-btn:hover { background: #00b4d8; color: #000; }
+        .player-frame iframe.loaded { opacity: 1; }
         .loading {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #555;
-            font-size: 14px;
+            inset: 0;
             z-index: 5;
-            text-align: center;
-            font-family: Arial, sans-serif;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.2rem;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
         }
-        .loading .spinner {
-            display: inline-block;
-            width: 30px;
-            height: 30px;
-            border: 3px solid #222;
-            border-top: 3px solid #00b4d8;
+        .loading.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loading-spinner {
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 10px;
+            border: 2px solid rgba(0,180,216,0.1);
+            border-top-color: #00b4d8;
+            animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .loading-text .status-dot {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #00b4d8;
+            margin-left: 0.4rem;
+            animation: pulse 1s infinite;
+        }
+        .loading-status {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
+            color: rgba(0,180,216,0.4);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .info-bar {
+            width: 90%;
+            max-width: 900px;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.7rem 1rem;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(255,255,255,0.02);
+            border-radius: 12px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            min-height: 0;
+        }
+        .file-info {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+            color: rgba(255,255,255,0.35);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+        .file-info .file-name {
+            color: #c8cdd0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 40vw;
+        }
+        .file-info .file-size {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: #00b4d8;
+            background: rgba(0,180,216,0.05);
+            border: 1px solid rgba(0,180,216,0.06);
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+        .file-info .platform-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: #8a8477;
+            flex-shrink: 0;
+        }
+        .footer-hint {
+            margin-top: 1.2rem;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
+            color: rgba(255,255,255,0.08);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
         }
         .save-toast {
             position: fixed;
@@ -2295,213 +2812,400 @@ TERABOX_PLAYER_HTML = """
             opacity: 1;
             bottom: 100px;
         }
+        @media (max-width: 700px) {
+            .player-frame { width: 96%; border-radius: 8px; }
+            .info-bar { width: 96%; padding: 0.6rem 0.8rem; }
+            .header { padding: 0.6rem 1rem; }
+            .header-brand .tera, .header-brand .box-text { font-size: 0.75rem; }
+            .header-badge { font-size: 0.35rem; padding: 0.02rem 0.3rem; }
+            .back-btn { font-size: 0.35rem; padding: 0.1rem 0.6rem; min-height: 20px; }
+            .file-info { font-size: 0.42rem; }
+            .file-info .file-name { max-width: 30vw; }
+            .footer-hint { font-size: 0.35rem; }
+            .loading-spinner { width: 36px; height: 36px; }
+            .save-toast { font-size: 0.45rem; padding: 0.3rem 0.8rem; bottom: 60px; }
+            .save-toast.show { bottom: 80px; }
+        }
+        @media (max-width: 450px) {
+            .header-status { display: none; }
+            .file-info .platform-tag { display: none; }
+            .file-info .file-name { max-width: 45vw; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="video-wrapper" id="videoWrapper">
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <div>Loading player...</div>
-            </div>
-            <iframe 
-                id="playerFrame"
-                src="{{ video_url }}" 
-                allowfullscreen 
-                allow="autoplay; encrypted-media; fullscreen"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-                loading="eager"
-            ></iframe>
+<div class="app">
+    <div class="bg-glow"></div>
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    
+    <div class="header" id="header">
+        <div class="header-brand">
+            <span class="tera">TERA</span>
+            <span class="box-text">BOX</span>
+            <span class="header-badge">18+</span>
         </div>
-        <div class="info">
-            <div class="file-info">
-                📁 <span>{{ file_name }}</span>
-                {% if file_size %}
-                | 📦 <span>{{ file_size }}</span>
-                {% endif %}
-            </div>
-            <a href="/" class="back-btn">← Back</a>
+        <div class="header-right">
+            <span class="header-status"><span class="dot"></span> secure stream</span>
+            <a href="/" class="back-btn">back</a>
         </div>
     </div>
+    
+    <div class="player-frame" id="playerFrame">
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">establishing secure stream <span class="status-dot"></span></div>
+            <div class="loading-status" id="loadingStatus">handshake · decrypt · mount</div>
+        </div>
+        <iframe
+            id="playerFrameEl"
+            src="{{ video_url }}"
+            allowfullscreen
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+            loading="eager"
+        ></iframe>
+    </div>
+    
+    <div class="info-bar" id="infoBar">
+        <div class="file-info">
+            <span class="platform-tag">📦 terabox</span>
+            <span class="file-name" id="fileName">{{ file_name }}</span>
+            {% if file_size %}
+            <span class="file-size">💾 {{ file_size }}</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="footer-hint">zero latency · dual platform · premium</div>
+</div>
 
-    <div class="save-toast" id="saveToast">📚 Added to library</div>
+<div class="save-toast" id="saveToast">📚 Added to terabox library</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // ===== LIBRARY FUNCTIONS =====
-            function getLibrary(platform) {
-                try {
-                    const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
-                    return JSON.parse(localStorage.getItem(key) || '[]');
-                } catch {
-                    return [];
-                }
-            }
-            
-            function saveLibrary(platform, library) {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ===== LIBRARY FUNCTIONS =====
+        function getLibrary(platform) {
+            try {
                 const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
-                localStorage.setItem(key, JSON.stringify(library));
+                return JSON.parse(localStorage.getItem(key) || '[]');
+            } catch {
+                return [];
             }
-            
-            function addToLibrary(platform, video) {
-                const library = getLibrary(platform);
-                const exists = library.some(item => item.url === video.url);
-                if (!exists) {
-                    video.watchedAt = new Date().toISOString();
-                    library.unshift(video);
-                    saveLibrary(platform, library);
-                    showToast('📚 Added to ' + platform + ' library');
-                    return true;
-                }
-                return false;
+        }
+        
+        function saveLibrary(platform, library) {
+            const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+            localStorage.setItem(key, JSON.stringify(library));
+        }
+        
+        function addToLibrary(platform, video) {
+            const library = getLibrary(platform);
+            const exists = library.some(item => item.url === video.url);
+            if (!exists) {
+                video.watchedAt = new Date().toISOString();
+                library.unshift(video);
+                saveLibrary(platform, library);
+                showToast('📚 Added to terabox library');
+                return true;
             }
+            return false;
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('saveToast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // ===== SAVE VIDEO TO LIBRARY =====
+        const videoUrl = "{{ video_url }}";
+        const originalUrl = new URLSearchParams(window.location.search).get('url') || '';
+        const fileName = "{{ file_name }}" || 'Terabox Video';
+        
+        let saved = false;
+        
+        const iframe = document.getElementById('playerFrameEl');
+        const loading = document.getElementById('loading');
+        const loadingStatus = document.getElementById('loadingStatus');
+        const statuses = ['handshake', 'decrypt', 'mount', 'negotiating keys', 'opening stream'];
+        let statusIdx = 0;
+        
+        const statusTimer = setInterval(function() {
+            statusIdx = (statusIdx + 1) % statuses.length;
+            if (loadingStatus) loadingStatus.textContent = statuses[statusIdx] + ' · · ·';
+        }, 700);
+        
+        function onLoaded() {
+            clearInterval(statusTimer);
+            loading.classList.add('hidden');
+            iframe.classList.add('loaded');
             
-            function showToast(message) {
-                const toast = document.getElementById('saveToast');
-                toast.textContent = message;
-                toast.classList.add('show');
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000);
+            if (!saved && (videoUrl || originalUrl)) {
+                saved = true;
+                addToLibrary('terabox', {
+                    url: originalUrl || videoUrl,
+                    title: fileName,
+                    platform: 'terabox',
+                    videoUrl: videoUrl,
+                    file_name: fileName,
+                    file_size: "{{ file_size }}"
+                });
             }
-            
-            // ===== SAVE VIDEO TO LIBRARY =====
-            const videoUrl = "{{ video_url }}";
-            const originalUrl = new URLSearchParams(window.location.search).get('url') || '';
-            const fileName = "{{ file_name }}" || 'Terabox Video';
-            
-            let saved = false;
-            
-            const iframe = document.getElementById('playerFrame');
-            const loading = document.getElementById('loading');
-            
-            iframe.addEventListener('load', function() {
-                loading.style.display = 'none';
-                
-                if (!saved && (videoUrl || originalUrl)) {
-                    saved = true;
-                    addToLibrary('terabox', {
-                        url: originalUrl || videoUrl,
-                        title: fileName,
-                        platform: 'terabox',
-                        videoUrl: videoUrl,
-                        file_name: fileName,
-                        file_size: "{{ file_size }}"
-                    });
-                }
-            });
-            
-            setTimeout(function() {
-                loading.style.display = 'none';
-                if (!saved && (videoUrl || originalUrl)) {
-                    saved = true;
-                    addToLibrary('terabox', {
-                        url: originalUrl || videoUrl,
-                        title: fileName,
-                        platform: 'terabox',
-                        videoUrl: videoUrl,
-                        file_name: fileName,
-                        file_size: "{{ file_size }}"
-                    });
-                }
-            }, 8000);
-        });
-    </script>
+        }
+        
+        iframe.addEventListener('load', onLoaded);
+        
+        setTimeout(function() {
+            onLoaded();
+        }, 8000);
+    });
+</script>
 </body>
 </html>
 """
 
-ERROR_PAGE_HTML = """
+ERROR_PAGE_HTML = r"""
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Error · Faphouse Player</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: #0a0a0a; 
-            font-family: Arial, sans-serif;
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh;
-            padding: 20px;
+        html, body {
+            background: #000000;
+            font-family: "Unbounded", sans-serif;
+            color: #f5f0e6;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .error-container {
-            max-width: 500px;
-            width: 100%;
-            padding: 40px;
-            background: #111;
-            border-radius: 16px;
-            border: 1px solid #222;
+        .bg-glow {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 40%, rgba(245,197,24,0.02), transparent 70%);
+            pointer-events: none;
+        }
+        .bg-orb {
+            position: absolute;
+            width: 40vmax;
+            height: 40vmax;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+        }
+        .bg-orb.orb-a {
+            top: -20%;
+            left: -15%;
+            background: radial-gradient(circle, rgba(245,197,24,0.04) 0%, transparent 65%);
+            animation: driftA 26s ease-in-out infinite alternate;
+        }
+        .bg-orb.orb-b {
+            bottom: -25%;
+            right: -18%;
+            background: radial-gradient(circle, rgba(255,68,68,0.035) 0%, transparent 65%);
+            animation: driftB 30s ease-in-out infinite alternate;
+        }
+        @keyframes driftA {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(7vmax, 6vmax) scale(1.12); }
+        }
+        @keyframes driftB {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-6vmax, -5vmax) scale(0.92); }
+        }
+        .error-card {
+            position: relative;
+            width: 92%;
+            max-width: 460px;
+            padding: 3rem 2.5rem;
+            background: rgba(8,8,8,0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 20px;
             text-align: center;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+            animation: cardIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .error-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
+        @keyframes cardIn {
+            0% { opacity: 0; transform: translateY(24px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .error-code {
+            font-size: 4.5rem;
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(135deg, #ff4444, #b02a2a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.3rem;
+            filter: drop-shadow(0 0 30px rgba(255,68,68,0.15));
+        }
+        .error-label {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.5rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: #3d3930;
+            margin-bottom: 1.8rem;
         }
         .error-title {
-            color: #ff4444;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #f5f0e6;
+            margin-bottom: 0.8rem;
+            letter-spacing: 0.02em;
         }
         .error-message {
-            color: #888;
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6rem;
+            line-height: 1.9;
+            color: #6b6558;
+            margin-bottom: 2rem;
         }
         .error-message .highlight {
-            color: #00b4d8;
+            color: #f5c518;
+        }
+        .btn-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
         }
         .back-btn {
-            display: inline-block;
-            padding: 10px 30px;
-            background: #00b4d8;
-            color: #000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            background: #f5c518;
+            border: none;
+            color: #000000;
             text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: all 0.3s;
+            padding: 0.7rem 2.2rem;
+            border-radius: 60px;
+            font-family: "Unbounded", sans-serif;
+            font-weight: 700;
+            font-size: 0.6rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 0 0 rgba(245,197,24,0.2);
         }
         .back-btn:hover {
-            background: #48cae4;
-            transform: scale(0.98);
+            transform: scale(0.97);
+            box-shadow: 0 0 30px rgba(245,197,24,0.2);
+        }
+        .back-btn:active { transform: scale(0.92); }
+        .retry-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #3d3930;
+            text-decoration: none;
+            padding: 0.7rem 1.4rem;
+            border-radius: 60px;
+            font-family: "Unbounded", sans-serif;
+            font-size: 0.55rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .retry-btn:hover {
+            color: #8a8477;
+            border-color: rgba(255,255,255,0.1);
         }
         .error-details {
-            margin-top: 15px;
-            padding: 10px;
-            background: #1a1a1a;
-            border-radius: 8px;
-            font-size: 12px;
-            color: #555;
+            margin-top: 1.6rem;
+            padding: 0.8rem 1rem;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(255,255,255,0.02);
+            border-radius: 10px;
+            font-size: 0.5rem;
+            color: #3a362e;
             word-break: break-all;
+            font-family: "JetBrains Mono", monospace;
+            text-align: left;
         }
         .error-details .label {
-            color: #444;
-            font-weight: bold;
+            color: #6b6558;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.42rem;
+            display: block;
+            margin-bottom: 0.4rem;
         }
         .error-details .value {
-            color: #777;
+            color: #8a8477;
+            line-height: 1.6;
+        }
+        .footer-hint {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 10;
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.4rem;
+            color: #1a1814;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+        @media (max-width: 500px) {
+            .error-card { padding: 2.2rem 1.5rem; }
+            .error-code { font-size: 3.5rem; }
+            .btn-row { flex-direction: column; }
+            .back-btn, .retry-btn { width: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="error-container">
-        <div class="error-icon">❌</div>
+    <div class="bg-glow"></div>
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    
+    <div class="error-card">
+        <div class="error-code">!</div>
+        <div class="error-label">stream error</div>
         <div class="error-title">{{ error_title }}</div>
         <div class="error-message">{{ error_message }}</div>
-        <a href="/" class="back-btn">← Go Home</a>
+        <div class="btn-row">
+            <a href="/" class="back-btn">← go home</a>
+            <button class="retry-btn" onclick="history.back()">retry</button>
+        </div>
         {% if error_detail %}
         <div class="error-details">
-            <span class="label">Details:</span>
+            <span class="label">details</span>
             <span class="value">{{ error_detail }}</span>
         </div>
         {% endif %}
     </div>
+    
+    <div class="footer-hint">faphouse + terabox · premium webplayer</div>
 </body>
 </html>
 """
@@ -2659,18 +3363,21 @@ def handler(request, context):
 if __name__ == "__main__":
     print(f"""
 {'='*70}
-Faphouse + Terabox Player API with Collapsible Library
+Faphouse + Terabox Player · Premium UI
 {'='*70}
 
 Features:
   • Faphouse: Logs in and extracts M3U8 URLs (Video.js player)
   • Terabox: Extracts proxy URL and embeds in iframe
+  • ✨ Ambient animated backgrounds (orbs, grid, vignette)
   • 📚 Collapsible library sidebar (hamburger menu button)
   • 📝 Separate libraries for each platform
   • 🔄 Click library items to replay videos
-  • ❌ Remove individual videos or clear library per platform
-  • 🔴 Live badge count on library button
-  • Premium 18+ webplayer UI with dual platform support
+  • 🔈 Volume control, mute + keyboard shortcuts (M, ↑, ↓)
+  • ⏳ Buffering indicator + buffered progress bar
+  • 🎞 Auto quality badge (SD/HD/FHD based on stream)
+  • 🌀 Premium loading states (button spinner, secure-stream)
+  • 🎨 Consistent glassmorphism design across all pages
 
 Endpoints:
   /play?url=URL         - Faphouse video player (Video.js)
