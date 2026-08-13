@@ -1434,15 +1434,6 @@ MAIN_PAGE_HTML = """
         clearLibrary(currentPlatform);
     });
     
-    // ===== LOADING STATE =====
-    urlForm.addEventListener('submit', function() {
-        loadBtn.classList.add('loading');
-        loadBtn.textContent = currentPlatform === 'faphouse' ? 'loading' : 'extracting';
-    });
-    document.addEventListener('DOMContentLoaded', function() {
-        videoUrlInput.focus();
-    });
-    
     // ===== UI FUNCTIONS =====
     document.getElementById('enterBtn').addEventListener('click', function() {
         document.getElementById('splashOverlay').classList.add('hidden');
@@ -1586,6 +1577,14 @@ MAIN_PAGE_HTML = """
             urlForm.submit();
         }
     });
+    
+    // ===== LOADING STATE =====
+    urlForm.addEventListener('submit', function() {
+        loadBtn.classList.add('loading');
+        loadBtn.textContent = currentPlatform === 'faphouse' ? 'loading' : 'extracting';
+    });
+    
+    videoUrlInput.focus();
 </script>
 </body>
 </html>
