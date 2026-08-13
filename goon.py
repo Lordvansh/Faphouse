@@ -401,373 +401,368 @@ MAIN_PAGE_HTML = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>The House · Faphouse / Terabox</title>
+    <title>Faphouse · The House</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --paper: #faf9f6;
-            --paper-2: #f2f0eb;
-            --ink: #1d1d1f;
-            --ink-2: #6e6e73;
-            --ink-3: #aeaeb2;
-            --line: rgba(29, 29, 31, 0.09);
-            --acc: #ff2e9a;
-            --acc-deep: #d9167c;
-            --acc-tint: rgba(255, 46, 154, 0.08);
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-            --shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-            --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.14);
+            --bg: #0a0a0b;
+            --panel: #131316;
+            --panel-2: #1b1b1f;
+            --line: rgba(255, 255, 255, 0.08);
+            --line-strong: rgba(255, 255, 255, 0.16);
+            --ink: #f5f5f7;
+            --ink-2: #9a9aa3;
+            --ink-3: #5d5d66;
+            --fap: #ffd60a;
+            --ter: #00a8ff;
+            --acc: var(--fap);
+            --acc-rgb: 255, 214, 10;
             --ease: cubic-bezier(0.16, 1, 0.3, 1);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         body[data-platform="terabox"] {
-            --acc: #d87a50;
-            --acc-deep: #b25e36;
-            --acc-tint: rgba(216, 122, 80, 0.1);
+            --acc: var(--ter);
+            --acc-rgb: 0, 168, 255;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; }
-        body {
-            background: var(--paper);
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        html, body {
+            background: var(--bg);
             color: var(--ink);
-            overflow: hidden;
+            font-family: "Space Grotesk", sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
-            text-rendering: optimizeLegibility;
+            transition: background 0.6s var(--ease);
         }
-        .app {
-            position: relative;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .bg-glow {
-            position: absolute;
-            top: -30%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80vmax;
-            height: 60vmax;
-            background: radial-gradient(ellipse at center, var(--acc-tint), transparent 65%);
+        ::selection { background: var(--acc); color: #0a0a0b; }
+        .glow {
+            position: fixed;
+            width: 70vmax;
+            height: 70vmax;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.15;
             pointer-events: none;
-            transition: background 500ms var(--ease);
+            z-index: 0;
+            transition: opacity 0.8s var(--ease);
+        }
+        .glow-fap { background: radial-gradient(circle, rgba(255, 214, 10, 0.9), transparent 62%); top: -28%; left: 50%; transform: translateX(-50%); }
+        .glow-ter { background: radial-gradient(circle, rgba(0, 168, 255, 0.9), transparent 62%); bottom: -30%; right: -12%; }
+        body[data-platform="faphouse"] .glow-ter { opacity: 0; }
+        body[data-platform="terabox"] .glow-fap { opacity: 0; }
+        .vignette {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
         }
 
-        /* ===== TOP BAR ===== */
-        .topbar {
-            position: relative;
-            z-index: 40;
-            flex-shrink: 0;
+        /* ============ SPLASH / 18+ INTRO ============ */
+        .splash {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: var(--bg);
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            padding: 0.7rem 1.6rem;
-            background: rgba(250, 249, 246, 0.72);
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
-            border-bottom: 1px solid var(--line);
+            justify-content: center;
+            gap: 1.4rem;
+            text-align: center;
+            padding: 2rem;
+            transition: opacity 0.7s var(--ease), transform 0.8s var(--ease), filter 0.7s var(--ease);
         }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
+        .splash.leave { opacity: 0; transform: scale(1.14); filter: blur(12px); pointer-events: none; }
+        .splash .a18-wrap {
+            overflow: hidden;
+            animation: a18Glow 3s ease-in-out infinite;
+            animation-delay: 0.9s;
         }
-        .brand-word {
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: var(--ink);
+        .splash .a18 {
+            font-family: "Unbounded", sans-serif;
+            font-weight: 900;
+            font-size: clamp(6rem, 24vw, 13rem);
+            line-height: 1;
+            background: linear-gradient(180deg, #ffffff 35%, var(--acc));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: block;
+            transform: translateY(110%);
+            opacity: 0;
+            animation: a18In 0.9s var(--spring) forwards;
+            animation-delay: 0.15s;
         }
-        .brand-word .dot { color: var(--acc); transition: color 300ms var(--ease); }
-        .brand-chip {
-            font-size: 0.6rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            color: var(--ink-2);
-            background: var(--paper-2);
-            border-radius: 999px;
-            padding: 0.22rem 0.6rem;
+        @keyframes a18In {
+            from { transform: translateY(110%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        .top-right {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
+        @keyframes a18Glow {
+            0%, 100% { filter: drop-shadow(0 0 24px rgba(var(--acc-rgb), 0.3)); }
+            50% { filter: drop-shadow(0 0 70px rgba(var(--acc-rgb), 0.65)); }
         }
-        .net-chip {
-            font-size: 0.62rem;
+        .splash .s-tag {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 0.72rem;
             font-weight: 600;
-            letter-spacing: 0.02em;
-            color: var(--acc-deep);
-            background: var(--acc-tint);
-            border-radius: 999px;
-            padding: 0.32rem 0.7rem;
-            transition: color 300ms var(--ease), background 300ms var(--ease);
-            white-space: nowrap;
+            letter-spacing: 0.55em;
+            text-transform: uppercase;
+            color: var(--ink-2);
+            opacity: 0;
+            animation: fadeUp 0.7s var(--ease) forwards;
+            animation-delay: 0.55s;
         }
-        .clock {
-            font-size: 0.62rem;
-            font-weight: 500;
+        .splash .s-warn {
+            font-size: 0.8rem;
+            line-height: 1.7;
             color: var(--ink-3);
-            white-space: nowrap;
-            font-variant-numeric: tabular-nums;
+            max-width: 360px;
+            opacity: 0;
+            animation: fadeUp 0.7s var(--ease) forwards;
+            animation-delay: 0.7s;
         }
-        .lib-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            background: var(--ink);
-            color: var(--paper);
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+        .enter-btn {
+            margin-top: 0.6rem;
+            font-family: "Unbounded", sans-serif;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #0a0a0b;
+            background: var(--acc);
             border: none;
             border-radius: 999px;
-            padding: 0.42rem 0.9rem;
-            font-family: inherit;
-            font-size: 0.66rem;
-            font-weight: 600;
-            letter-spacing: 0.01em;
+            padding: 1rem 2.6rem;
             cursor: pointer;
-            box-shadow: var(--shadow-sm);
-            transition: transform 180ms var(--ease), box-shadow 300ms var(--ease), opacity 300ms var(--ease);
+            box-shadow: 0 10px 40px rgba(var(--acc-rgb), 0.4);
+            transition: transform 0.3s var(--spring), box-shadow 0.5s var(--ease);
+            opacity: 0;
+            animation: fadeUp 0.7s var(--ease) forwards;
+            animation-delay: 0.85s;
         }
         @media (hover: hover) and (pointer: fine) {
-            .lib-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
+            .enter-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 16px 60px rgba(var(--acc-rgb), 0.6); }
         }
-        .lib-btn:active { transform: scale(0.96); }
-        .lib-btn.terabox-mode { background: #d87a50; }
-        .lib-count {
-            background: var(--acc);
-            color: #fff;
-            border-radius: 999px;
-            min-width: 18px;
-            height: 18px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.6rem;
-            font-weight: 700;
-            padding: 0 0.3rem;
-            transition: background 300ms var(--ease);
+        .enter-btn:active { transform: scale(0.94); }
+        .splash .s-foot {
+            position: absolute;
+            bottom: 1.6rem;
+            font-size: 0.62rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink-3);
         }
 
-        /* ===== STAGE ===== */
+        /* ============ TOP BAR ============ */
+        .topbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.2rem 2rem;
+            pointer-events: none;
+        }
+        .brand {
+            font-family: "Unbounded", sans-serif;
+            font-weight: 800;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: baseline;
+        }
+        .brand .w { color: #fff; }
+        .brand .a { color: var(--acc); transition: color 0.6s var(--ease); }
+        .brand .end { color: var(--ink-3); font-weight: 400; font-size: 0.7rem; margin-left: 0.5rem; letter-spacing: 0.08em; }
+        .top-right { display: flex; align-items: center; gap: 0.7rem; pointer-events: auto; }
+        .pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line-strong);
+            border-radius: 999px;
+            padding: 0.5rem 0.9rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--ink-2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: border-color 0.4s var(--ease), color 0.4s var(--ease);
+        }
+        .pill .pdot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--acc);
+            box-shadow: 0 0 10px var(--acc);
+            animation: pulse 1.6s ease-in-out infinite;
+            transition: background 0.5s var(--ease);
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .lib-btn { cursor: pointer; font-family: inherit; }
+        .lib-btn .count {
+            background: var(--acc);
+            color: #0a0a0b;
+            border-radius: 999px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 0.12rem 0.42rem;
+            transition: background 0.5s var(--ease);
+        }
+
+        /* ============ STAGE ============ */
         .stage {
             position: relative;
-            z-index: 20;
-            flex: 1;
-            min-height: 0;
+            z-index: 5;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: clamp(1.1rem, 3vh, 2rem);
-            padding: 1.2rem 1.4rem;
-            max-width: 1080px;
-            width: 100%;
-            margin: 0 auto;
-            opacity: 0;
-            transition: opacity 600ms var(--ease);
+            padding: 6.5rem 1.5rem 3rem;
+            gap: 1.7rem;
         }
-        .stage.armed { opacity: 1; }
 
-        .hero { text-align: center; }
-        .hero-eyebrow {
-            display: inline-block;
-            font-size: 0.62rem;
-            font-weight: 600;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            color: var(--acc);
-            margin-bottom: 0.7rem;
-            opacity: 0;
-            animation: fadeUp 500ms var(--ease) forwards;
-            animation-delay: 60ms;
-        }
-        .hero h1 {
-            font-size: clamp(2.2rem, 6vw, 4rem);
-            font-weight: 800;
-            letter-spacing: -0.035em;
-            line-height: 1.02;
-            color: var(--ink);
-            opacity: 0;
-            transform: translateY(24px) scale(0.97);
-            animation: springIn 700ms var(--spring) forwards;
-            animation-delay: 90ms;
-        }
-        .hero h1 .dot { color: var(--acc); }
-        .hero-sub {
-            margin-top: 0.8rem;
-            font-size: clamp(0.85rem, 1.6vw, 1rem);
-            font-weight: 400;
-            color: var(--ink-2);
-            opacity: 0;
-            animation: fadeUp 500ms var(--ease) forwards;
-            animation-delay: 200ms;
-        }
-        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-        @keyframes springIn { to { opacity: 1; transform: translateY(0) scale(1); } }
-
-        /* ===== GATES ===== */
-        .gates {
-            display: flex;
-            gap: clamp(0.9rem, 2.5vw, 1.4rem);
-            width: 100%;
-            align-items: stretch;
-        }
-        .gate-wrap {
-            flex: 1;
-            min-width: 0;
-            perspective: 1200px;
-            opacity: 0;
-            transform: translateY(28px);
-            animation: fadeUp 600ms var(--ease) forwards;
-        }
-        .gate-wrap:nth-child(1) { animation-delay: 160ms; }
-        .gate-wrap:nth-child(2) { animation-delay: 230ms; }
-
-        .gate {
+        /* ============ WORDMARK STACK ============ */
+        .logo-stage {
             position: relative;
-            display: flex;
-            flex-direction: column;
             width: 100%;
-            height: clamp(190px, 36vh, 300px);
-            padding: 1.4rem 1.5rem;
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 26px;
-            box-shadow: var(--shadow);
-            color: var(--ink);
-            text-align: left;
+            height: clamp(110px, 21vw, 200px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+        .logo {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "Unbounded", sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.4rem, 9.5vw, 6.8rem);
+            line-height: 1;
+            letter-spacing: 0.01em;
+            text-transform: uppercase;
             cursor: pointer;
-            font-family: inherit;
+            user-select: none;
+            opacity: 0;
+            transition: transform 0.85s var(--spring), opacity 0.5s var(--ease);
+            will-change: transform;
+            white-space: nowrap;
+        }
+        .logo.active { opacity: 1; }
+        .logo.down { transform: translateY(135%) rotate(1.5deg) scale(0.92); opacity: 0; pointer-events: none; }
+        .logo-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transform-style: preserve-3d;
             will-change: transform;
-            transition: border-color 300ms var(--ease), box-shadow 400ms var(--ease), background 300ms var(--ease);
         }
-        @media (hover: hover) and (pointer: fine) {
-            .gate:hover { border-color: rgba(29,29,31,0.16); box-shadow: var(--shadow-lg); }
+        .logo .word { display: inline-flex; }
+        .logo .word .l {
+            display: inline-block;
+            transform: translateY(120%) rotate(8deg);
+            opacity: 0;
+            transition: transform 0.7s var(--spring), opacity 0.5s var(--ease);
         }
-        .gate:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--acc-tint), var(--shadow); }
-        .gate.selected {
-            border-color: transparent;
-            box-shadow: 0 0 0 2px var(--acc), var(--shadow-lg);
+        .logo.in .word .l { transform: none; opacity: 1; }
+        .word.white { color: #fff; }
+        .word.accent { color: var(--acc); transition: color 0.6s var(--ease); }
+        .logo .sheen {
+            position: absolute;
+            inset: -25%;
+            pointer-events: none;
+            background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.12) 50%, transparent 58%);
+            transform: translateX(-130%);
+            animation: sheen 5s var(--ease) infinite;
+            animation-delay: 1.2s;
+            mix-blend-mode: overlay;
         }
-        .gate.selected {
-            background: linear-gradient(180deg, #fff, var(--acc-tint));
-        }
-        .gate.ping { animation: pingRing 700ms var(--ease); }
-        @keyframes pingRing {
-            0% { box-shadow: 0 0 0 0 rgba(255,46,154,0.45); }
-            100% { box-shadow: 0 0 0 16px transparent; }
-        }
-        .gate-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transform: translateZ(30px);
-        }
-        .gate-icon {
-            width: clamp(44px, 5vw, 54px);
-            height: clamp(44px, 5vw, 54px);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(1.2rem, 2.4vw, 1.5rem);
-            background: var(--paper-2);
-            transform: translateZ(40px) rotate(-4deg);
-            transition: transform 400ms var(--spring), background 300ms var(--ease);
-        }
-        .gate.selected .gate-icon { transform: translateZ(40px) rotate(0deg) scale(1.05); background: var(--acc-tint); }
-        .gate-idx {
-            font-size: 0.62rem;
-            font-weight: 700;
-            letter-spacing: 0.14em;
-            color: var(--ink-3);
-        }
-        .gate-mid { transform: translateZ(20px); }
-        .gate-name {
-            font-size: clamp(1.4rem, 3vw, 1.9rem);
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: var(--ink);
-        }
-        .gate-tag {
-            margin-top: 0.35rem;
-            font-size: 0.78rem;
-            font-weight: 400;
-            color: var(--ink-2);
-        }
-        .gate-foot {
-            margin-top: auto;
-            padding-top: 1rem;
-            border-top: 1px solid var(--line);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transform: translateZ(24px);
-        }
-        .gate-status {
-            font-size: 0.62rem;
-            font-weight: 600;
-            color: var(--ink-3);
-            transition: color 300ms var(--ease);
-        }
-        .gate.selected .gate-status { color: var(--acc-deep); }
-        .gate-cta {
+        @keyframes sheen { 0% { transform: translateX(-130%); } 55%, 100% { transform: translateX(130%); } }
+
+        /* ============ TAGLINE ============ */
+        .tagline {
+            position: relative;
+            height: 1.4rem;
             font-size: 0.68rem;
             font-weight: 600;
-            color: var(--acc-deep);
-            background: var(--acc-tint);
-            border-radius: 999px;
-            padding: 0.34rem 0.85rem;
-            opacity: 0;
-            transform: translateX(-8px);
-            transition: opacity 300ms var(--ease), transform 300ms var(--ease);
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--ink-2);
+            text-align: center;
         }
-        .gate.selected .gate-cta { opacity: 1; transform: translateX(0); }
-        .gate-key {
-            position: absolute;
-            right: 1.4rem;
-            top: 1.4rem;
-            font-size: 0.6rem;
-            font-weight: 600;
-            color: var(--ink-3);
-            transform: translateZ(30px);
-        }
+        .tagline > span { position: absolute; inset: 0; transition: opacity 0.45s var(--ease); opacity: 0; }
+        body[data-platform="faphouse"] .tagline .tag-fap { opacity: 1; }
+        body[data-platform="terabox"] .tagline .tag-ter { opacity: 1; }
 
-        /* ===== DECK ===== */
-        .deck {
-            width: 100%;
-            max-width: 680px;
-            opacity: 0;
-            transform: translateY(24px);
-            animation: fadeUp 600ms var(--ease) forwards;
-            animation-delay: 300ms;
-        }
-        .deck-shell {
+        /* ============ SWITCH BUTTON ============ */
+        .switch-btn {
             display: flex;
             align-items: center;
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 30px;
-            box-shadow: var(--shadow);
-            padding: 0.35rem 0.35rem 0.35rem 1.4rem;
-            transition: border-color 300ms var(--ease), box-shadow 300ms var(--ease);
+            gap: 0.55rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--line-strong);
+            color: var(--ink-2);
+            border-radius: 999px;
+            padding: 0.5rem 1.15rem;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: border-color 0.4s var(--ease), color 0.4s var(--ease), transform 0.3s var(--spring), box-shadow 0.5s var(--ease);
+            touch-action: manipulation;
         }
-        .deck-shell:focus-within {
+        .switch-btn .sdot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--acc);
+            box-shadow: 0 0 12px var(--acc);
+            transition: background 0.5s var(--ease);
+        }
+        .switch-btn .arrow { transition: transform 0.4s var(--ease); font-size: 0.85rem; }
+        @media (hover: hover) and (pointer: fine) {
+            .switch-btn:hover { border-color: var(--acc); color: #fff; box-shadow: 0 0 30px rgba(var(--acc-rgb), 0.18); }
+            .switch-btn:hover .arrow { transform: translateY(3px); }
+        }
+        .switch-btn:active { transform: scale(0.94); }
+
+        /* ============ DECK / URL PASTER ============ */
+        .deck {
+            width: min(680px, 94vw);
+            display: flex;
+            align-items: center;
+            background: var(--panel);
+            border: 1px solid var(--line-strong);
+            border-radius: 18px;
+            padding: 0.45rem 0.45rem 0.45rem 1.2rem;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: border-color 0.5s var(--ease), box-shadow 0.5s var(--ease), transform 0.4s var(--ease);
+        }
+        .deck:focus-within {
             border-color: var(--acc);
-            box-shadow: 0 0 0 3px var(--acc-tint), var(--shadow);
+            box-shadow: 0 0 0 4px rgba(var(--acc-rgb), 0.16), 0 24px 70px rgba(0, 0, 0, 0.55);
         }
         .deck-prefix {
-            font-size: 0.95rem;
+            font-family: "Unbounded", sans-serif;
             font-weight: 700;
-            letter-spacing: -0.01em;
+            font-size: 0.78rem;
             color: var(--acc);
             white-space: nowrap;
-            transition: color 300ms var(--ease);
+            transition: color 0.5s var(--ease);
         }
         .deck-input {
             flex: 1;
@@ -775,801 +770,455 @@ MAIN_PAGE_HTML = """
             background: transparent;
             border: none;
             outline: none;
-            padding: 0.95rem 1rem;
-            font-family: inherit;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--ink);
-            caret-color: var(--acc);
+            color: #fff;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1rem;
+            padding: 0.85rem 0.8rem;
         }
-        .deck-input::placeholder { color: var(--ink-3); font-weight: 400; }
+        .deck-input::placeholder { color: var(--ink-3); }
         .launch-btn {
             background: var(--acc);
-            color: #fff;
+            color: #0a0a0b;
             border: none;
-            border-radius: 999px;
-            padding: 0.85rem 1.7rem;
-            font-family: inherit;
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 0.01em;
+            border-radius: 14px;
+            padding: 0.95rem 1.7rem;
+            font-family: "Unbounded", sans-serif;
+            font-weight: 700;
+            font-size: 0.76rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
             cursor: pointer;
-            position: relative;
             white-space: nowrap;
-            box-shadow: 0 4px 14px var(--acc-tint);
-            transition: transform 180ms var(--ease), box-shadow 300ms var(--ease), background 300ms var(--ease);
+            box-shadow: 0 8px 30px rgba(var(--acc-rgb), 0.35);
+            transition: transform 0.3s var(--spring), background 0.5s var(--ease), box-shadow 0.5s var(--ease), opacity 0.4s var(--ease);
+            touch-action: manipulation;
         }
         @media (hover: hover) and (pointer: fine) {
-            .launch-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px var(--acc-tint); }
+            .launch-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 44px rgba(var(--acc-rgb), 0.5); }
         }
-        .launch-btn:active { transform: scale(0.97); }
-        .launch-btn.loading {
-            pointer-events: none;
-            color: transparent;
-        }
-        .launch-btn.loading::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            margin: auto;
-            width: 18px;
-            height: 18px;
-            border: 2.5px solid rgba(255,255,255,0.35);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .deck-hint {
-            margin-top: 0.65rem;
-            text-align: center;
-            font-size: 0.68rem;
-            font-weight: 400;
-            color: var(--ink-3);
-        }
+        .launch-btn:active { transform: scale(0.95); }
+        .launch-btn.loading { opacity: 0.55; pointer-events: none; animation: loadPulse 0.9s ease-in-out infinite; }
+        @keyframes loadPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.9; } }
 
-        /* ===== TRY ROW ===== */
-        .try-row {
+        .hint {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
+            gap: 1.1rem;
+            font-size: 0.7rem;
+            color: var(--ink-3);
             flex-wrap: wrap;
-            opacity: 0;
-            animation: fadeUp 600ms var(--ease) forwards;
-            animation-delay: 360ms;
+            justify-content: center;
         }
-        .try-label {
-            font-size: 0.66rem;
-            font-weight: 600;
-            color: var(--ink-3);
-            letter-spacing: 0.06em;
-        }
-        .tick-link {
-            font-size: 0.68rem;
-            font-weight: 500;
+        .hint kbd {
+            background: var(--panel-2);
+            border: 1px solid var(--line-strong);
+            border-radius: 6px;
+            padding: 0.12rem 0.45rem;
+            font-size: 0.64rem;
             color: var(--ink-2);
-            text-decoration: none;
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            padding: 0.36rem 0.85rem;
-            background: #fff;
-            cursor: pointer;
-            transition: color 200ms var(--ease), border-color 200ms var(--ease), transform 180ms var(--ease), box-shadow 300ms var(--ease);
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .tick-link:hover { color: var(--ink); border-color: rgba(29,29,31,0.2); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
-        }
-        .tick-link:active { transform: scale(0.97); }
-        .foot-note {
-            margin-top: 0.4rem;
-            font-size: 0.62rem;
-            font-weight: 500;
-            color: var(--ink-3);
-            letter-spacing: 0.04em;
+            font-family: inherit;
         }
 
-        /* ===== TOAST ===== */
-        #saveToast {
-            position: fixed;
-            bottom: 36px;
-            left: 50%;
-            transform: translate(-50%, 16px);
-            background: rgba(29, 29, 31, 0.92);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: #fff;
-            border-radius: 999px;
-            padding: 0.6rem 1.2rem;
-            font-size: 0.78rem;
-            font-weight: 500;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-            opacity: 0;
-            pointer-events: none;
-            z-index: 200;
-            transition: opacity 300ms var(--ease), transform 400ms var(--ease);
-        }
-        #saveToast.show { opacity: 1; transform: translate(-50%, 0); }
-
-        /* ===== LIBRARY SIDEBAR ===== */
-        .library-sidebar-backdrop {
+        /* ============ LIBRARY DRAWER ============ */
+        .scrim {
             position: fixed;
             inset: 0;
-            background: rgba(29, 29, 31, 0.25);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 55;
             opacity: 0;
-            visibility: hidden;
-            transition: opacity 300ms var(--ease), visibility 300ms var(--ease);
-            z-index: 90;
+            pointer-events: none;
+            transition: opacity 0.45s var(--ease);
         }
-        .library-sidebar-backdrop.open { opacity: 1; visibility: visible; }
-        .library-sidebar {
+        .scrim.open { opacity: 1; pointer-events: auto; }
+        .drawer {
             position: fixed;
             top: 0;
             right: 0;
-            height: 100%;
-            width: 380px;
-            max-width: 92vw;
-            background: rgba(250, 249, 246, 0.9);
-            backdrop-filter: saturate(180%) blur(30px);
-            -webkit-backdrop-filter: saturate(180%) blur(30px);
-            z-index: 100;
-            transform: translateX(105%);
-            transition: transform 450ms var(--ease);
+            bottom: 0;
+            width: min(400px, 92vw);
+            background: rgba(15, 15, 18, 0.92);
+            backdrop-filter: blur(26px);
+            -webkit-backdrop-filter: blur(26px);
+            border-left: 1px solid var(--line-strong);
+            transform: translateX(103%);
+            transition: transform 0.55s var(--spring);
+            z-index: 60;
             display: flex;
             flex-direction: column;
-            padding: 1.4rem;
-            box-shadow: -20px 0 60px rgba(0,0,0,0.1);
-        }
-        .library-sidebar.open { transform: translateX(0); }
-        .library-sidebar-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--line);
-        }
-        .library-sidebar-title {
-            font-size: 1.05rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-        .library-sidebar-title .count { color: var(--acc); font-weight: 600; }
-        .library-sidebar-close {
-            background: var(--paper-2);
-            border: none;
-            border-radius: 999px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--ink-2);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: transform 180ms var(--ease), background 200ms var(--ease);
-        }
-        .library-sidebar-close:hover { background: var(--line); }
-        .library-sidebar-close:active { transform: scale(0.92); }
-        .library-sidebar-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin: 1rem 0;
-        }
-        .library-sidebar-actions button {
-            font-family: inherit;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--ink-2);
-            background: transparent;
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            padding: 0.4rem 0.9rem;
-            cursor: pointer;
-            transition: color 200ms var(--ease), border-color 200ms var(--ease), transform 180ms var(--ease);
-        }
-        .library-sidebar-actions button:hover { color: var(--ink); border-color: rgba(29,29,31,0.2); }
-        .library-sidebar-actions button:active { transform: scale(0.96); }
-        .library-sidebar-actions button.clear:hover { color: #d33; border-color: rgba(221,51,51,0.3); }
-        .library-list { flex: 1; overflow-y: auto; padding-right: 0.4rem; }
-        .library-list::-webkit-scrollbar { width: 4px; }
-        .library-list::-webkit-scrollbar-track { background: transparent; }
-        .library-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
-        .library-empty {
-            text-align: center;
-            padding: 2.6rem 0;
-            color: var(--ink-3);
-            font-size: 0.78rem;
-            font-weight: 400;
-            line-height: 1.8;
-        }
-        .library-empty .empty-icon { font-size: 2rem; display: block; margin-bottom: 0.6rem; }
-        .library-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            box-shadow: var(--shadow-sm);
-            padding: 0.7rem 0.85rem;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-            transition: transform 180ms var(--ease), box-shadow 300ms var(--ease), border-color 200ms var(--ease);
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .library-item:hover { transform: translateY(-1px); box-shadow: var(--shadow); border-color: rgba(29,29,31,0.16); }
-        }
-        .library-item:active { transform: scale(0.98); }
-        .library-item .item-info { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
-        .library-item .item-icon { font-size: 0.95rem; flex-shrink: 0; }
-        .library-item .item-title {
-            font-size: 0.78rem;
-            font-weight: 500;
-            color: var(--ink);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-        }
-        .library-item .item-platform {
-            font-size: 0.55rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            border-radius: 999px;
-            padding: 0.1rem 0.5rem;
-            flex-shrink: 0;
-        }
-        .library-item .item-platform.faphouse { background: var(--acc-tint); color: var(--acc-deep); }
-        .library-item .item-platform.terabox { background: rgba(216,122,80,0.12); color: #b25e36; }
-        .library-item .item-remove {
-            background: transparent;
-            border: none;
-            color: var(--ink-3);
-            font-size: 0.75rem;
-            cursor: pointer;
-            padding: 0 0.2rem;
-            transition: color 200ms var(--ease);
-        }
-        .library-item .item-remove:hover { color: #d33; }
-
-        /* ===== SPLASH ===== */
-        .splash-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--paper);
-            transition: opacity 500ms var(--ease), visibility 500ms var(--ease);
             padding: 1.5rem;
         }
-        .splash-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-        .splash-panel {
-            text-align: center;
-            max-width: 420px;
-            opacity: 0;
-            transform: translateY(20px) scale(0.98);
-            animation: springIn 700ms var(--spring) forwards;
-        }
-        .splash-chip {
-            display: inline-block;
-            font-size: 0.6rem;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--acc);
-            background: var(--acc-tint);
-            border-radius: 999px;
-            padding: 0.3rem 0.7rem;
-            margin-bottom: 1.2rem;
-        }
-        .splash-18 {
-            font-size: clamp(4rem, 14vw, 6rem);
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            line-height: 1;
-            color: var(--ink);
-        }
-        .splash-18 .plus { color: var(--acc); }
-        .splash-warn {
-            margin: 1.2rem 0 1.8rem;
-            font-size: 0.85rem;
-            font-weight: 400;
-            line-height: 1.7;
+        .drawer.open { transform: none; }
+        .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+        .drawer-title { font-family: "Unbounded", sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.02em; }
+        .drawer-title .a { color: var(--acc); transition: color 0.5s var(--ease); }
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line-strong);
+            border-radius: 10px;
             color: var(--ink-2);
-        }
-        .splash-warn strong { color: var(--ink); font-weight: 600; }
-        .splash-btn {
-            background: var(--ink);
-            color: var(--paper);
-            border: none;
-            border-radius: 999px;
-            padding: 0.9rem 2.2rem;
-            font-family: inherit;
-            font-size: 0.9rem;
-            font-weight: 600;
+            width: 34px;
+            height: 34px;
             cursor: pointer;
-            box-shadow: var(--shadow);
-            transition: transform 180ms var(--ease), box-shadow 300ms var(--ease);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: border-color 0.3s var(--ease), color 0.3s var(--ease), transform 0.3s var(--spring);
         }
         @media (hover: hover) and (pointer: fine) {
-            .splash-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+            .icon-btn:hover { border-color: var(--acc); color: #fff; }
         }
-        .splash-btn:active { transform: scale(0.97); }
-        .splash-sub {
-            margin-top: 1rem;
-            font-size: 0.66rem;
-            font-weight: 500;
+        .icon-btn:active { transform: scale(0.9) rotate(-90deg); }
+        .drawer-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.55rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+        .drawer-item {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 0.7rem 0.9rem;
+            text-decoration: none;
+            color: var(--ink);
+            transition: border-color 0.3s var(--ease), transform 0.3s var(--spring);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .drawer-item:hover { border-color: var(--acc); transform: translateX(-3px); }
+        }
+        .drawer-item .itag {
+            flex-shrink: 0;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
+        }
+        .itag.fap { background: rgba(255, 214, 10, 0.14); color: #ffd60a; }
+        .itag.ter { background: rgba(0, 168, 255, 0.14); color: #00a8ff; }
+        .drawer-item .ititle { font-size: 0.78rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .drawer-item .itime { font-size: 0.62rem; color: var(--ink-3); flex-shrink: 0; }
+        .drawer-empty { font-size: 0.8rem; color: var(--ink-3); text-align: center; padding: 2rem 0; }
+
+        /* ============ FOOTER ============ */
+        .foot {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            padding: 0 1rem 1.4rem;
+            font-size: 0.62rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
             color: var(--ink-3);
         }
 
-        @media (max-width: 820px) {
-            .gates { flex-direction: column; }
-            .gate { height: 148px; }
-            .gate-tag { display: none; }
-            .clock { display: none; }
-            .topbar { padding: 0.6rem 1rem; }
-            .net-chip { font-size: 0.56rem; }
-            .deck-shell { padding-left: 1rem; }
-            .launch-btn { padding: 0.8rem 1.3rem; }
-        }
-        @media (max-width: 460px) {
-            .brand-chip { display: none; }
-            .gate { padding: 1.1rem 1.2rem; }
+        @media (max-width: 640px) {
+            .topbar { padding: 1rem 1.1rem; }
+            .topbar .brand { font-size: 0.85rem; }
+            .pill .pdot { display: none; }
+            .stage { gap: 1.4rem; padding: 5.5rem 1rem 2rem; }
+            .deck { padding: 0.4rem 0.4rem 0.4rem 1rem; }
+            .deck-input { font-size: 0.9rem; }
+            .launch-btn { padding: 0.9rem 1.2rem; font-size: 0.7rem; }
+            .hint { gap: 0.7rem; font-size: 0.64rem; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .hero-eyebrow, .hero h1, .hero-sub, .gate-wrap, .deck, .try-row, .splash-panel { animation: none; opacity: 1; transform: none; }
-            .gate.ping { animation: none; }
+            .splash .a18, .splash .s-tag, .splash .s-warn, .enter-btn { animation: none; opacity: 1; transform: none; }
+            .logo .word .l { animation: none; transform: none; opacity: 1; }
+            .logo { transition: opacity 0.4s var(--ease); }
+            .pill .pdot, .logo .sheen { animation: none; }
         }
     </style>
 </head>
-<body>
-<div class="app" id="app">
-    <div class="bg-glow"></div>
+<body data-platform="faphouse">
+<div class="glow glow-fap"></div>
+<div class="glow glow-ter"></div>
+<div class="vignette"></div>
 
-    <!-- ===== TOP BAR ===== -->
-    <header class="topbar">
-        <div class="brand">
-            <span class="brand-word">The House<span class="dot">.</span></span>
-            <span class="brand-chip">18+</span>
-        </div>
-        <div class="top-right">
-            <span class="net-chip" id="hudPlatform">Faphouse</span>
-            <span class="clock" id="hudClock"></span>
-            <button class="lib-btn" id="libraryToggleBtn">Library <span class="lib-count" id="libraryBadge">0</span></button>
-        </div>
-    </header>
+<div class="splash" id="splash">
+    <div class="a18-wrap">
+        <span class="a18">18+</span>
+    </div>
+    <div class="s-tag">Adult Content</div>
+    <div class="s-warn">This site contains adult material. You must be 18 or older to continue. By entering, you agree to our Terms of Service and Privacy Policy.</div>
+    <button class="enter-btn" id="enterBtn">Enter</button>
+    <div class="s-foot">18 U.S.C. §2257 Record Keeping</div>
+</div>
 
-    <!-- ===== STAGE ===== -->
-    <main class="stage" id="stage">
-        <div class="hero">
-            <div class="hero-eyebrow">Adult streaming hub</div>
-            <h1>One player.<br>The<span class="dot"> House</span>.</h1>
-            <div class="hero-sub">Paste a link, pick a platform, press launch. Faphouse &amp; Terabox, one place.</div>
-        </div>
+<header class="topbar">
+    <div class="brand">
+        <span class="w">FAP</span><span class="a">HOUSE</span>
+        <span class="end">THE HOUSE</span>
+    </div>
+    <div class="top-right">
+        <div class="pill"><span class="pdot"></span><span id="statusText">Streaming</span></div>
+        <div class="pill" id="clockPill"><span id="clockText">--:--:--</span></div>
+        <button class="pill lib-btn" id="libraryBtn">Library <span class="count" id="libraryBadge">0</span></button>
+    </div>
+</header>
 
-        <div class="gates">
-            <div class="gate-wrap">
-                <button class="gate selected" id="gateFaphouse" type="button" aria-label="Select Faphouse">
-                    <span class="gate-top">
-                        <span class="gate-icon">🍑</span>
-                        <span class="gate-key">key 1</span>
-                    </span>
-                    <span class="gate-mid">
-                        <span class="gate-name">Faphouse</span>
-                        <span class="gate-tag">Premium streams · direct</span>
-                    </span>
-                    <span class="gate-foot">
-                        <span class="gate-status">ARMED</span>
-                        <span class="gate-cta">Selected</span>
-                    </span>
-                </button>
-            </div>
-            <div class="gate-wrap">
-                <button class="gate" id="gateTerabox" type="button" aria-label="Select Terabox">
-                    <span class="gate-top">
-                        <span class="gate-icon">📦</span>
-                        <span class="gate-key">key 2</span>
-                    </span>
-                    <span class="gate-mid">
-                        <span class="gate-name">Terabox</span>
-                        <span class="gate-tag">Links · decode · direct</span>
-                    </span>
-                    <span class="gate-foot">
-                        <span class="gate-status">STANDBY</span>
-                        <span class="gate-cta">Selected</span>
-                    </span>
-                </button>
+<main class="stage">
+    <div class="logo-stage">
+        <div class="logo active" id="gateFaphouse">
+            <div class="logo-inner">
+                <span class="word white">FAP</span>
+                <span class="word accent">HOUSE</span>
+                <span class="sheen"></span>
             </div>
         </div>
-
-        <form class="deck" id="urlForm" method="GET" action="/play">
-            <div class="deck-shell">
-                <span class="deck-prefix" id="deckPrefix">fap://</span>
-                <input class="deck-input" id="videoUrlInput" name="url" type="text" spellcheck="false" autocomplete="off" placeholder="https://faphouse2.com/videos/..." value="{{ video_url or '' }}">
-                <button type="submit" class="launch-btn" id="loadBtn">Launch</button>
-            </div>
-            <div class="deck-hint">Enter to launch · paste a link to auto-switch platforms</div>
-        </form>
-
-        <div class="try-row" id="ticker">
-            <span class="try-label">Try</span>
-            <a class="tick-link" data-platform="faphouse" data-url="https://faphouse2.com/videos/shared-bed-stepsister-fuck-C6Qi1u">faphouse2.com/.../C6Qi1u</a>
-            <a class="tick-link" data-platform="terabox" data-url="https://terafileshare.com/s/1xJtL3j2LJ-ZsUA6zbG7Pug">terafileshare.com/s/1xJtL3j2LJ-ZsUA6zbG7Pug</a>
-        </div>
-        <div class="foot-note">Adult content · 18+ only</div>
-    </main>
-
-    <!-- Library Backdrop -->
-    <div class="library-sidebar-backdrop" id="libraryBackdrop"></div>
-
-    <!-- Library Sidebar -->
-    <div class="library-sidebar" id="librarySidebar">
-        <div class="library-sidebar-header">
-            <div class="library-sidebar-title">Library <span class="count" id="sidebarCount">(0)</span></div>
-            <button class="library-sidebar-close" id="libraryCloseBtn" aria-label="Close library">✕</button>
-        </div>
-        <div class="library-sidebar-actions">
-            <button id="refreshLibraryBtn">↻ Refresh</button>
-            <button class="clear" id="clearLibraryBtn">Clear all</button>
-        </div>
-        <div class="library-list" id="libraryList">
-            <div class="library-empty">
-                <span class="empty-icon">🗂️</span>
-                No videos in your library yet<br>
-                Watch something to save it here
+        <div class="logo down" id="gateTerabox">
+            <div class="logo-inner">
+                <span class="word white">TERA</span>
+                <span class="word accent">BOX</span>
+                <span class="sheen"></span>
             </div>
         </div>
     </div>
 
-    <div id="saveToast"></div>
-</div>
-
-<!-- ===== SPLASH ===== -->
-<div class="splash-overlay" id="splashOverlay">
-    <div class="splash-panel">
-        <div class="splash-chip">18+</div>
-        <div class="splash-18">18<span class="plus">+</span></div>
-        <div class="splash-warn">This site contains adult content.<br>You must be <strong>18 or older</strong> to enter.</div>
-        <button class="splash-btn" id="enterBtn">Enter</button>
-        <div class="splash-sub">By entering you confirm you are of legal age</div>
+    <div class="tagline">
+        <span class="tag-fap">Premium · Live · HD</span>
+        <span class="tag-ter">Files · Mirrors · Cloud</span>
     </div>
-</div>
+
+    <button class="switch-btn" id="platformSwitch">
+        <span class="sdot"></span>
+        <span class="label" id="switchLabel">Terabox</span>
+        <span class="arrow">↓</span>
+    </button>
+
+    <form class="deck" id="urlForm" method="GET" action="/play">
+        <span class="deck-prefix" id="deckPrefix">fap://</span>
+        <input class="deck-input" id="videoUrlInput" name="url" type="text" spellcheck="false" autocomplete="off" placeholder="Paste a Faphouse or Terabox link here..." value="{{ video_url or '' }}">
+        <button type="submit" class="launch-btn" id="loadBtn">Launch</button>
+    </form>
+
+    <div class="hint">
+        <span><kbd>F</kbd> Faphouse</span>
+        <span><kbd>T</kbd> Terabox</span>
+        <span><kbd>Enter</kbd> Launch</span>
+        <span>Paste a link to auto-switch</span>
+    </div>
+</main>
+
+<footer class="foot">Faphouse · The House of Adult Streaming</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="libraryDrawer">
+    <div class="drawer-head">
+        <div class="drawer-title">My <span class="a">Library</span></div>
+        <button class="icon-btn" id="refreshLibraryBtn" title="Refresh">↻</button>
+    </div>
+    <div class="drawer-list" id="libraryList"></div>
+</aside>
 
 <script>
-    // ===== DOM REFS =====
-    const enterBtn = document.getElementById('enterBtn');
-    const splashOverlay = document.getElementById('splashOverlay');
-    const stage = document.getElementById('stage');
-    const gateFaphouse = document.getElementById('gateFaphouse');
-    const gateTerabox = document.getElementById('gateTerabox');
-    const deckPrefix = document.getElementById('deckPrefix');
-    const urlForm = document.getElementById('urlForm');
-    const videoUrlInput = document.getElementById('videoUrlInput');
-    const loadBtn = document.getElementById('loadBtn');
-    const hudPlatform = document.getElementById('hudPlatform');
-    const hudClock = document.getElementById('hudClock');
-    const ticker = document.getElementById('ticker');
-    const libraryToggleBtn = document.getElementById('libraryToggleBtn');
-    const librarySidebar = document.getElementById('librarySidebar');
-    const libraryBackdrop = document.getElementById('libraryBackdrop');
-    const libraryCloseBtn = document.getElementById('libraryCloseBtn');
-    const refreshLibraryBtn = document.getElementById('refreshLibraryBtn');
-    const clearLibraryBtn = document.getElementById('clearLibraryBtn');
-    const libraryList = document.getElementById('libraryList');
-    const libraryBadge = document.getElementById('libraryBadge');
-    const sidebarCount = document.getElementById('sidebarCount');
+document.addEventListener('DOMContentLoaded', function() {
+    // ===== CORE REFS =====
+    var splash = document.getElementById('splash');
+    var enterBtn = document.getElementById('enterBtn');
+    var gateFaphouse = document.getElementById('gateFaphouse');
+    var gateTerabox = document.getElementById('gateTerabox');
+    var switchBtn = document.getElementById('platformSwitch');
+    var switchLabel = document.getElementById('switchLabel');
+    var deckPrefix = document.getElementById('deckPrefix');
+    var videoUrlInput = document.getElementById('videoUrlInput');
+    var urlForm = document.getElementById('urlForm');
+    var loadBtn = document.getElementById('loadBtn');
+    var clockText = document.getElementById('clockText');
+    var libraryBadge = document.getElementById('libraryBadge');
+    var libraryBtn = document.getElementById('libraryBtn');
+    var libraryDrawer = document.getElementById('libraryDrawer');
+    var libraryList = document.getElementById('libraryList');
+    var refreshLibraryBtn = document.getElementById('refreshLibraryBtn');
+    var scrim = document.getElementById('scrim');
 
-    let currentPlatform = 'faphouse';
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var currentPlatform = 'faphouse';
 
-    // ===== LIBRARY FUNCTIONS =====
-    function getLibrary(platform) {
-        try {
-            const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
-            return JSON.parse(localStorage.getItem(key) || '[]');
-        } catch {
-            return [];
-        }
+    // ===== LETTER SPLIT FOR WORDMARKS =====
+    function splitLetters(root) {
+        var words = root.querySelectorAll('.word');
+        var idx = 0;
+        words.forEach(function(word) {
+            var text = word.textContent;
+            word.textContent = '';
+            for (var i = 0; i < text.length; i++) {
+                var s = document.createElement('span');
+                s.className = 'l';
+                s.style.transitionDelay = (idx * 45) + 'ms';
+                s.textContent = text[i];
+                word.appendChild(s);
+                idx++;
+            }
+        });
+    }
+    splitLetters(gateFaphouse);
+    splitLetters(gateTerabox);
+
+    function revealLogos() {
+        gateFaphouse.classList.add('in');
+        gateTerabox.classList.add('in');
     }
 
-    function saveLibrary(platform, library) {
-        const key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
-        localStorage.setItem(key, JSON.stringify(library));
-        renderLibrary();
-    }
-
-    function addToLibrary(platform, video) {
-        const library = getLibrary(platform);
-        const exists = library.some(item => item.url === video.url);
-        if (!exists) {
-            video.watchedAt = new Date().toISOString();
-            library.unshift(video);
-            saveLibrary(platform, library);
-            showToast('Added to ' + platform + ' library');
-            return true;
-        }
-        return false;
-    }
-
-    function removeFromLibrary(platform, url) {
-        const library = getLibrary(platform).filter(item => item.url !== url);
-        saveLibrary(platform, library);
-    }
-
-    function clearLibrary(platform) {
-        if (confirm('Clear all ' + platform + ' videos from library?')) {
-            saveLibrary(platform, []);
-        }
-    }
-
-    function showToast(message) {
-        const toast = document.getElementById('saveToast');
-        if (!toast) {
-            const newToast = document.createElement('div');
-            newToast.id = 'saveToast';
-            newToast.style.cssText = `
-                position: fixed;
-                bottom: 36px;
-                left: 50%;
-                transform: translate(-50%, 16px);
-                background: rgba(29,29,31,0.92);
-                color: #fff;
-                border-radius: 999px;
-                padding: 0.6rem 1.2rem;
-                font-size: 0.78rem;
-                font-weight: 500;
-                box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-                opacity: 0;
-                pointer-events: none;
-                z-index: 200;
-                transition: opacity 300ms ease, transform 400ms ease;
-            `;
-            document.body.appendChild(newToast);
-            newToast.textContent = message;
-            setTimeout(function() {
-                newToast.classList.add('show');
-                newToast.style.opacity = '1';
-                newToast.style.transform = 'translate(-50%, 0)';
-            }, 100);
-            setTimeout(function() {
-                newToast.style.opacity = '0';
-                newToast.style.transform = 'translate(-50%, 16px)';
-                setTimeout(function() { newToast.remove(); }, 400);
-            }, 3000);
-            return;
-        }
-        toast.textContent = message;
-        toast.classList.add('show');
+    // ===== SPLASH =====
+    function enterApp() {
+        if (splash) splash.classList.add('leave');
+        revealLogos();
         setTimeout(function() {
-            toast.classList.remove('show');
-        }, 3000);
+            if (splash) splash.style.display = 'none';
+        }, 800);
+        try { sessionStorage.setItem('fap18', '1'); } catch (e) {}
     }
-
-    function renderLibrary() {
-        const platform = currentPlatform || 'faphouse';
-        const library = getLibrary(platform);
-
-        libraryBadge.textContent = library.length;
-        sidebarCount.textContent = '(' + library.length + ')';
-
-        if (platform === 'terabox') {
-            libraryToggleBtn.classList.add('terabox-mode');
-        } else {
-            libraryToggleBtn.classList.remove('terabox-mode');
+    enterBtn.addEventListener('click', enterApp);
+    try {
+        if (sessionStorage.getItem('fap18') === '1') {
+            enterApp();
         }
+    } catch (e) {}
 
-        if (library.length === 0) {
-            libraryList.innerHTML = `
-                <div class="library-empty">
-                    <span class="empty-icon">🗂️</span>
-                    No ${platform} videos in your library yet<br>
-                    Watch something to save it here
-                </div>
-            `;
-            return;
-        }
-
-        let html = '';
-        library.forEach(function(item) {
-            const icon = platform === 'faphouse' ? '🍑' : '📦';
-            const title = item.title || (item.file_name || 'Untitled');
-            html += `
-                <div class="library-item" data-url="${item.url}">
-                    <div class="item-info">
-                        <span class="item-icon">${icon}</span>
-                        <span class="item-title">${title}</span>
-                        <span class="item-platform ${platform}">${platform}</span>
-                    </div>
-                    <button class="item-remove" data-url="${item.url}">✕</button>
-                </div>
-            `;
-        });
-
-        libraryList.innerHTML = html;
-
-        libraryList.querySelectorAll('.library-item').forEach(function(el) {
-            const url = el.dataset.url;
-
-            el.addEventListener('click', function(e) {
-                if (e.target.closest('.item-remove')) return;
-                const form = urlForm;
-                const input = videoUrlInput;
-                input.value = url;
-                form.action = platform === 'faphouse' ? '/play' : '/terabox';
-                form.submit();
-                closeLibrary();
-            });
-
-            el.querySelector('.item-remove').addEventListener('click', function(e) {
-                e.stopPropagation();
-                removeFromLibrary(platform, this.dataset.url);
-            });
-        });
-    }
-
-    // ===== LIBRARY SIDEBAR CONTROLS =====
-    function toggleLibrary() {
-        librarySidebar.classList.toggle('open');
-        libraryBackdrop.classList.toggle('open');
-        if (librarySidebar.classList.contains('open')) {
-            renderLibrary();
-        }
-    }
-
-    function closeLibrary() {
-        librarySidebar.classList.remove('open');
-        libraryBackdrop.classList.remove('open');
-    }
-
-    libraryToggleBtn.addEventListener('click', toggleLibrary);
-    libraryCloseBtn.addEventListener('click', closeLibrary);
-    libraryBackdrop.addEventListener('click', closeLibrary);
-    refreshLibraryBtn.addEventListener('click', renderLibrary);
-    clearLibraryBtn.addEventListener('click', function() {
-        clearLibrary(currentPlatform);
-    });
-
-    // ===== PLATFORM SELECTION =====
-    function setPlatform(platform, ping) {
+    // ===== PLATFORM =====
+    function setPlatform(platform) {
+        if (platform === currentPlatform) return;
         currentPlatform = platform;
-        const isFap = platform === 'faphouse';
         document.body.dataset.platform = platform;
-        gateFaphouse.classList.toggle('selected', isFap);
-        gateTerabox.classList.toggle('selected', !isFap);
-        gateFaphouse.querySelector('.gate-status').textContent = isFap ? 'ARMED' : 'STANDBY';
-        gateTerabox.querySelector('.gate-status').textContent = !isFap ? 'ARMED' : 'STANDBY';
-        deckPrefix.textContent = isFap ? 'fap://' : 'tera://';
-        videoUrlInput.placeholder = isFap ? 'https://faphouse2.com/videos/...' : 'https://terafileshare.com/s/...';
-        loadBtn.textContent = isFap ? 'Launch' : 'Extract';
-        urlForm.action = isFap ? '/play' : '/terabox';
-        hudPlatform.textContent = isFap ? 'Faphouse' : 'Terabox';
-        renderLibrary();
-        if (ping) {
-            const gate = isFap ? gateFaphouse : gateTerabox;
-            gate.classList.remove('ping');
-            void gate.offsetWidth;
-            gate.classList.add('ping');
+        deckPrefix.textContent = platform === 'faphouse' ? 'fap://' : 'tera://';
+        switchLabel.textContent = platform === 'faphouse' ? 'Terabox' : 'Faphouse';
+        if (platform === 'faphouse') {
+            gateFaphouse.classList.remove('down');
+            gateFaphouse.classList.add('active');
+            gateTerabox.classList.remove('active');
+            gateTerabox.classList.add('down');
+        } else {
+            gateTerabox.classList.remove('down');
+            gateTerabox.classList.add('active');
+            gateFaphouse.classList.remove('active');
+            gateFaphouse.classList.add('down');
         }
     }
 
-    function detectPlatformFromUrl(val) {
-        const v = val.toLowerCase();
-        const isTera = ['terabox', 'terafileshare', 'share.com', 'file.com', 'teraboxlink', '1024terabox', 'teraboxapp'].some(function(s) {
-            return v.includes(s);
-        });
-        const isFap = v.includes('faphouse') || v.includes('faphouse2');
-        if (isTera) {
-            setPlatform('terabox', true);
-        } else if (isFap) {
-            setPlatform('faphouse', true);
-        }
-    }
-
-    gateFaphouse.addEventListener('click', function() { setPlatform('faphouse', false); });
-    gateTerabox.addEventListener('click', function() { setPlatform('terabox', false); });
-
-    document.addEventListener('keydown', function(e) {
-        if (!splashOverlay.classList.contains('hidden')) return;
-        if (e.target.tagName === 'INPUT') return;
-        if (e.key === '1' || e.key === 'f' || e.key === 'F') setPlatform('faphouse', false);
-        if (e.key === '2' || e.key === 't' || e.key === 'T') setPlatform('terabox', false);
+    gateFaphouse.addEventListener('click', function() { setPlatform('faphouse'); });
+    gateTerabox.addEventListener('click', function() { setPlatform('terabox'); });
+    switchBtn.addEventListener('click', function() {
+        setPlatform(currentPlatform === 'faphouse' ? 'terabox' : 'faphouse');
     });
 
-    // ===== URL INPUT =====
+    // ===== AUTO-DETECT =====
+    function detectPlatform(url) {
+        if (!url) return null;
+        if (/terabox|terafileshare|terafile|teracloud|filemirror/i.test(url)) return 'terabox';
+        if (/faphouse|fap-house|fap/i.test(url)) return 'faphouse';
+        return null;
+    }
+    videoUrlInput.addEventListener('input', function() {
+        var p = detectPlatform(videoUrlInput.value);
+        if (p) setPlatform(p);
+    });
     videoUrlInput.addEventListener('paste', function() {
+        var self = this;
         setTimeout(function() {
-            detectPlatformFromUrl(videoUrlInput.value);
+            var p = detectPlatform(self.value);
+            if (p) setPlatform(p);
         }, 50);
     });
 
-    videoUrlInput.addEventListener('input', function() {
-        detectPlatformFromUrl(videoUrlInput.value);
-    });
-
-    videoUrlInput.addEventListener('change', function() {
-        detectPlatformFromUrl(videoUrlInput.value);
-    });
-
-    videoUrlInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            detectPlatformFromUrl(videoUrlInput.value);
-            urlForm.submit();
-        }
-    });
-
-    // ===== TRY ROW =====
-    ticker.addEventListener('click', function(e) {
-        const link = e.target.closest('.tick-link');
-        if (!link) return;
-        const platform = link.dataset.platform;
-        setPlatform(platform, true);
-        videoUrlInput.value = link.dataset.url;
-        setTimeout(function() {
-            urlForm.submit();
-        }, 80);
-    });
-
-    // ===== LOADING STATE =====
-    urlForm.addEventListener('submit', function() {
+    // ===== LAUNCH =====
+    urlForm.addEventListener('submit', function(e) {
         loadBtn.classList.add('loading');
-        loadBtn.textContent = currentPlatform === 'faphouse' ? 'Loading' : 'Extracting';
+        urlForm.action = currentPlatform === 'terabox' ? '/terabox' : '/play';
     });
 
-    // ===== CLOCK =====
-    function tickClock() {
-        const d = new Date();
-        const p = function(n) { return String(n).padStart(2, '0'); };
-        hudClock.textContent = p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + ' UTC';
+    // ===== LIBRARY =====
+    function getLibrary(platform) {
+        try {
+            var key = platform === 'faphouse' ? 'faphouseLibrary' : 'teraboxLibrary';
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (e) { return []; }
     }
-    tickClock();
-    setInterval(tickClock, 1000);
-
-    // ===== GATE 3D TILT =====
-    if (!reduceMotion && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-        document.querySelectorAll('.gate').forEach(function(gate) {
-            const target = { rx: 0, ry: 0 };
-            const current = { rx: 0, ry: 0 };
-            let raf = null;
-            function loop() {
-                current.rx += (target.rx - current.rx) * 0.1;
-                current.ry += (target.ry - current.ry) * 0.1;
-                gate.style.transform = 'rotateX(' + current.rx + 'deg) rotateY(' + current.ry + 'deg)';
-                raf = null;
-                if (Math.abs(target.rx - current.rx) > 0.03 || Math.abs(target.ry - current.ry) > 0.03) {
-                    raf = requestAnimationFrame(loop);
-                }
-            }
-            gate.addEventListener('mousemove', function(e) {
-                const r = gate.getBoundingClientRect();
-                target.ry = ((e.clientX - r.left) / r.width - 0.5) * 8;
-                target.rx = ((e.clientY - r.top) / r.height - 0.5) * -6;
-                if (!raf) raf = requestAnimationFrame(loop);
-            });
-            gate.addEventListener('mouseleave', function() {
-                target.rx = 0;
-                target.ry = 0;
-                if (!raf) raf = requestAnimationFrame(loop);
-            });
+    function renderLibrary() {
+        var items = [];
+        ['faphouse', 'terabox'].forEach(function(pl) {
+            getLibrary(pl).forEach(function(v) { items.push({ v: v, pl: pl }); });
+        });
+        libraryBadge.textContent = String(items.length);
+        libraryList.innerHTML = '';
+        if (items.length === 0) {
+            var empty = document.createElement('div');
+            empty.className = 'drawer-empty';
+            empty.textContent = 'No saved videos yet.';
+            libraryList.appendChild(empty);
+            return;
+        }
+        items.slice(0, 50).forEach(function(it) {
+            var a = document.createElement('a');
+            a.className = 'drawer-item';
+            var target = it.v.url || it.v.videoUrl || '';
+            a.href = (it.pl === 'faphouse' ? '/play?url=' : '/terabox?url=') + encodeURIComponent(target);
+            var tag = document.createElement('span');
+            tag.className = 'itag ' + (it.pl === 'faphouse' ? 'fap' : 'ter');
+            tag.textContent = it.pl === 'faphouse' ? 'FAP' : 'TERA';
+            var title = document.createElement('span');
+            title.className = 'ititle';
+            title.textContent = it.v.title || 'Saved video';
+            var time = document.createElement('span');
+            time.className = 'itime';
+            time.textContent = it.v.watchedAt ? new Date(it.v.watchedAt).toLocaleDateString() : '';
+            a.appendChild(tag);
+            a.appendChild(title);
+            a.appendChild(time);
+            libraryList.appendChild(a);
         });
     }
+    renderLibrary();
+    refreshLibraryBtn.addEventListener('click', renderLibrary);
+    function toggleDrawer(open) {
+        var o = open !== undefined ? open : !libraryDrawer.classList.contains('open');
+        libraryDrawer.classList.toggle('open', o);
+        scrim.classList.toggle('open', o);
+    }
+    libraryBtn.addEventListener('click', function() { toggleDrawer(); });
+    scrim.addEventListener('click', function() { toggleDrawer(false); });
 
-    // ===== ENTER =====
-    enterBtn.addEventListener('click', function() {
-        splashOverlay.classList.add('hidden');
-        stage.classList.add('armed');
-        renderLibrary();
-        videoUrlInput.focus();
+    // ===== CLOCK =====
+    function tick() {
+        var d = new Date();
+        var p = function(n) { return String(n).padStart(2, '0'); };
+        clockText.textContent = p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds());
+    }
+    tick();
+    setInterval(tick, 1000);
+
+    // ===== 3D TILT =====
+    var canTilt = false;
+    try {
+        canTilt = window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
+                  !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {}
+    if (canTilt) {
+        var inners = [gateFaphouse.querySelector('.logo-inner'), gateTerabox.querySelector('.logo-inner')];
+        var tx = 0, ty = 0, cx = 0, cy = 0;
+        document.addEventListener('mousemove', function(e) {
+            tx = (e.clientX / window.innerWidth - 0.5);
+            ty = (e.clientY / window.innerHeight - 0.5);
+        });
+        function loop() {
+            cx += (tx - cx) * 0.08;
+            cy += (ty - cy) * 0.08;
+            var rx = -cy * 5;
+            var ry = cx * 8;
+            inners.forEach(function(el) {
+                el.style.transform = 'rotateX(' + rx + 'deg) rotateY(' + ry + 'deg)';
+            });
+            requestAnimationFrame(loop);
+        }
+        loop();
+    }
+
+    // ===== KEYBOARD =====
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'f' || e.key === 'F') setPlatform('faphouse');
+        if (e.key === 't' || e.key === 'T') setPlatform('terabox');
     });
-
-    // ===== INIT =====
-    setPlatform('faphouse', false);
+});
 </script>
 </body>
 </html>
@@ -1584,27 +1233,23 @@ PLAYER_PAGE_HTML = r"""
     <title>Faphouse · The House</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://vjs.zencdn.net/8.0.0/video-js.css" rel="stylesheet" />
     <style>
         :root {
-            --paper: #faf9f6;
-            --ink: #1d1d1f;
-            --ink-2: #6e6e73;
-            --ink-3: #aeaeb2;
-            --line: rgba(29, 29, 31, 0.09);
-            --acc: #ff2e9a;
-            --acc-tint: rgba(255, 46, 154, 0.1);
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-            --shadow: 0 10px 40px rgba(0,0,0,0.08);
-            --shadow-lg: 0 24px 70px rgba(0,0,0,0.16);
+            --bg: #0a0a0b;
+            --ink: #f5f5f7;
+            --ink-2: #9a9aa3;
+            --acc: #ffd60a;
+            --acc-rgb: 255, 214, 10;
+            --line: rgba(255, 255, 255, 0.1);
             --ease: cubic-bezier(0.16, 1, 0.3, 1);
             --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
-            background: var(--paper);
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            font-family: "Space Grotesk", -apple-system, sans-serif;
             color: var(--ink);
             height: 100vh;
             width: 100vw;
@@ -1623,7 +1268,7 @@ PLAYER_PAGE_HTML = r"""
             transform: translateX(-50%);
             width: 80vmax;
             height: 55vmax;
-            background: radial-gradient(ellipse at center, var(--acc-tint), transparent 65%);
+            background: radial-gradient(ellipse at center, rgba(var(--acc-rgb), 0.12), transparent 62%);
             pointer-events: none;
         }
         .app {
@@ -1645,9 +1290,10 @@ PLAYER_PAGE_HTML = r"""
             width: min(90vw, 920px);
             aspect-ratio: 16 / 9;
             background: #000;
-            border-radius: 26px;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--line);
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0,0,0,0.6);
             opacity: 0;
             transform: translateY(24px) scale(0.98);
             animation: frameIn 700ms var(--ease) forwards;
@@ -1668,7 +1314,7 @@ PLAYER_PAGE_HTML = r"""
             right: 0;
             z-index: 15;
             padding: 0.9rem 1.1rem;
-            background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+            background: linear-gradient(180deg, rgba(0,0,0,0.72) 0%, transparent 100%);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1688,42 +1334,41 @@ PLAYER_PAGE_HTML = r"""
             padding: 0.34rem 0.85rem;
         }
         .header-brand .word {
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: -0.01em;
+            font-family: "Unbounded", sans-serif;
+            font-weight: 800;
+            font-size: 0.66rem;
+            letter-spacing: 0.02em;
             color: #fff;
         }
         .header-brand .dot { color: var(--acc); }
         .header-badge {
             font-size: 0.55rem;
-            font-weight: 700;
-            color: #fff;
+            font-weight: 800;
+            color: #0a0a0b;
             background: var(--acc);
             border-radius: 999px;
             padding: 0.12rem 0.4rem;
+            font-family: "Unbounded", sans-serif;
         }
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+        .header-right { display: flex; align-items: center; gap: 0.5rem; }
         .quality-badge {
             font-size: 0.55rem;
-            font-weight: 600;
-            letter-spacing: 0.08em;
+            font-weight: 700;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
-            color: #fff;
+            color: var(--acc);
             background: rgba(20,20,22,0.55);
             backdrop-filter: blur(16px) saturate(160%);
             -webkit-backdrop-filter: blur(16px) saturate(160%);
+            border: 1px solid rgba(var(--acc-rgb), 0.35);
             border-radius: 999px;
             padding: 0.3rem 0.7rem;
         }
-        .quality-badge.live { color: #fff; }
+        .quality-badge.live { color: var(--acc); }
         .header-status {
             font-size: 0.55rem;
             font-weight: 600;
-            color: rgba(255,255,255,0.75);
+            color: rgba(255,255,255,0.8);
             background: rgba(20,20,22,0.55);
             backdrop-filter: blur(16px) saturate(160%);
             -webkit-backdrop-filter: blur(16px) saturate(160%);
@@ -1737,7 +1382,8 @@ PLAYER_PAGE_HTML = r"""
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background: #ff2e9a;
+            background: var(--acc);
+            box-shadow: 0 0 10px var(--acc);
             animation: pulse 1.5s ease-in-out infinite;
             display: inline-block;
         }
@@ -1746,7 +1392,7 @@ PLAYER_PAGE_HTML = r"""
             background: rgba(20,20,22,0.55);
             backdrop-filter: blur(16px) saturate(160%);
             -webkit-backdrop-filter: blur(16px) saturate(160%);
-            border: none;
+            border: 1px solid rgba(255,255,255,0.12);
             color: #fff;
             border-radius: 999px;
             padding: 0.34rem 0.9rem;
@@ -1760,10 +1406,10 @@ PLAYER_PAGE_HTML = r"""
             min-height: 26px;
             display: flex;
             align-items: center;
-            transition: transform 180ms var(--ease), background 250ms var(--ease);
+            transition: transform 180ms var(--ease), background 250ms var(--ease), border-color 250ms var(--ease);
         }
         @media (hover: hover) and (pointer: fine) {
-            .back-btn:hover { background: rgba(20,20,22,0.75); }
+            .back-btn:hover { background: rgba(20,20,22,0.78); border-color: var(--acc); }
         }
         .back-btn:active { transform: scale(0.95); }
 
@@ -1777,14 +1423,14 @@ PLAYER_PAGE_HTML = r"""
             width: clamp(60px, 9vw, 76px);
             height: clamp(60px, 9vw, 76px);
             border-radius: 50%;
-            background: rgba(255,255,255,0.95);
+            background: var(--acc);
             border: none;
-            color: #000;
+            color: #0a0a0b;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+            box-shadow: 0 0 0 6px rgba(var(--acc-rgb), 0.2), 0 14px 50px rgba(var(--acc-rgb), 0.5);
             opacity: 0;
             pointer-events: none;
             transition: opacity 250ms var(--ease), transform 250ms var(--ease);
@@ -1794,7 +1440,7 @@ PLAYER_PAGE_HTML = r"""
             .center-play:hover { transform: translate(-50%, -50%) scale(1.06); }
         }
         .center-play:active { transform: translate(-50%, -50%) scale(0.94); }
-        .center-play svg { width: 32px; height: 32px; fill: currentColor; margin-left: 5px; }
+        .center-play svg { width: 30px; height: 30px; fill: currentColor; margin-left: 4px; }
 
         /* ===== CONTROLS (overlay) ===== */
         .controls-wrapper {
@@ -1804,7 +1450,7 @@ PLAYER_PAGE_HTML = r"""
             right: 0;
             z-index: 20;
             padding: 1rem 1rem 0.9rem 1rem;
-            background: linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 70%, transparent 100%);
+            background: linear-gradient(0deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 70%, transparent 100%);
             opacity: 0;
             transition: opacity 300ms var(--ease);
         }
@@ -1814,7 +1460,7 @@ PLAYER_PAGE_HTML = r"""
             position: relative;
             width: 100%;
             height: 5px;
-            background: rgba(255,255,255,0.28);
+            background: rgba(255,255,255,0.22);
             border-radius: 4px;
             cursor: pointer;
             transition: height 200ms var(--ease);
@@ -1827,6 +1473,7 @@ PLAYER_PAGE_HTML = r"""
             border-radius: 4px;
             position: relative;
             transition: width 0.1s linear;
+            box-shadow: 0 0 12px rgba(var(--acc-rgb), 0.7);
         }
         .progress-buffer {
             position: absolute;
@@ -1834,7 +1481,7 @@ PLAYER_PAGE_HTML = r"""
             left: 0;
             height: 100%;
             width: 0%;
-            background: rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.35);
             border-radius: 4px;
             transition: width 0.3s var(--ease);
         }
@@ -1847,8 +1494,8 @@ PLAYER_PAGE_HTML = r"""
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            background: #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            background: var(--acc);
+            box-shadow: 0 2px 10px rgba(var(--acc-rgb), 0.8);
             opacity: 0;
             transition: opacity 200ms var(--ease);
         }
@@ -1877,7 +1524,7 @@ PLAYER_PAGE_HTML = r"""
             justify-content: center;
             touch-action: manipulation;
         }
-        .controls-row button:active { transform: scale(0.92); color: #fff; }
+        .controls-row button:active { transform: scale(0.92); color: var(--acc); }
         .controls-row .seek-btn {
             font-size: 0.6rem;
             color: rgba(255,255,255,0.7);
@@ -1885,14 +1532,14 @@ PLAYER_PAGE_HTML = r"""
             min-height: 30px;
         }
         @media (hover: hover) and (pointer: fine) {
-            .controls-row .seek-btn:hover { color: #fff; background: rgba(255,255,255,0.14); }
+            .controls-row .seek-btn:hover { color: var(--acc); background: rgba(255,255,255,0.1); }
         }
         .controls-row .time-display {
             font-size: 0.62rem;
             font-weight: 500;
-            color: rgba(255,255,255,0.85);
+            color: rgba(255,255,255,0.9);
             padding: 0.1rem 0.4rem;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.04em;
             min-width: 84px;
             text-align: center;
             font-variant-numeric: tabular-nums;
@@ -1900,11 +1547,7 @@ PLAYER_PAGE_HTML = r"""
         }
         .controls-row .fs-btn { font-size: 0.58rem; color: rgba(255,255,255,0.7); min-height: 30px; }
         .controls-row .fs-btn svg { width: 17px; height: 17px; }
-        .controls-row .icon-btn {
-            width: 38px;
-            height: 38px;
-            padding: 0;
-        }
+        .controls-row .icon-btn { width: 38px; height: 38px; padding: 0; }
         .controls-row .icon-btn svg { fill: currentColor; }
         .controls-row .play-btn {
             width: clamp(42px, 6vw, 52px);
@@ -1913,24 +1556,19 @@ PLAYER_PAGE_HTML = r"""
             min-height: 42px;
             padding: 0;
             border-radius: 50%;
-            background: rgba(255,255,255,0.16);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            background: var(--acc);
+            color: #0a0a0b;
+            box-shadow: 0 0 0 5px rgba(var(--acc-rgb), 0.18), 0 6px 26px rgba(var(--acc-rgb), 0.5);
         }
         @media (hover: hover) and (pointer: fine) {
-            .controls-row .play-btn:hover { background: rgba(255,255,255,0.28); }
+            .controls-row .play-btn:hover { background: #ffe14d; color: #0a0a0b; }
         }
         .controls-row .play-btn svg { width: 20px; height: 20px; display: none; }
         .controls-row .play-btn svg.icon-play { margin-left: 2px; }
         .controls-row .play-btn.playing svg.icon-pause { display: block; }
         .controls-row .play-btn.playing svg.icon-play { display: none; }
         .controls-row .play-btn:not(.playing) svg.icon-play { display: block; }
-        .volume-group {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
+        .volume-group { display: flex; align-items: center; gap: 0.4rem; }
         .controls-row .vol-btn {
             width: 36px;
             height: 36px;
@@ -1940,15 +1578,15 @@ PLAYER_PAGE_HTML = r"""
             color: rgba(255,255,255,0.85);
         }
         .controls-row .vol-btn svg { width: 18px; height: 18px; fill: currentColor; }
-        .controls-row .vol-btn.muted { color: rgba(255,255,255,0.4); }
+        .controls-row .vol-btn.muted { color: rgba(255,255,255,0.35); }
         @media (hover: hover) and (pointer: fine) {
-            .controls-row .vol-btn:hover { background: rgba(255,255,255,0.14); }
+            .controls-row .vol-btn:hover { background: rgba(255,255,255,0.12); color: var(--acc); }
         }
         .vol-slider {
             width: 80px;
             height: 5px;
             border-radius: 4px;
-            background: rgba(255,255,255,0.28);
+            background: rgba(255,255,255,0.22);
             cursor: pointer;
             position: relative;
             transition: width 250ms var(--ease);
@@ -1969,8 +1607,8 @@ PLAYER_PAGE_HTML = r"""
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: #fff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            background: var(--acc);
+            box-shadow: 0 0 8px rgba(var(--acc-rgb), 0.7);
             opacity: 0;
             transition: opacity 200ms var(--ease);
         }
@@ -1984,7 +1622,7 @@ PLAYER_PAGE_HTML = r"""
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.35);
             opacity: 0;
             pointer-events: none;
             transition: opacity 300ms var(--ease);
@@ -1994,19 +1632,14 @@ PLAYER_PAGE_HTML = r"""
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.25);
-            border-top-color: #fff;
+            border: 3px solid rgba(var(--acc-rgb), 0.25);
+            border-top-color: var(--acc);
             animation: buffSpin 0.8s linear infinite;
         }
         @keyframes buffSpin { to { transform: rotate(360deg); } }
 
         /* ===== CLICK OVERLAY ===== */
-        .click-overlay {
-            position: absolute;
-            inset: 0;
-            z-index: 10;
-            cursor: pointer;
-        }
+        .click-overlay { position: absolute; inset: 0; z-index: 10; cursor: pointer; }
 
         /* ===== META BELOW ===== */
         .meta {
@@ -2022,43 +1655,42 @@ PLAYER_PAGE_HTML = r"""
         }
         @keyframes metaIn { to { opacity: 1; transform: translateY(0); } }
         .meta-title {
-            font-size: clamp(0.85rem, 2vw, 1.05rem);
+            font-family: "Unbounded", sans-serif;
             font-weight: 700;
-            letter-spacing: -0.01em;
+            font-size: clamp(0.82rem, 2vw, 1rem);
+            letter-spacing: 0.01em;
             color: var(--ink);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 60%;
         }
+        .meta-title .a { color: var(--acc); }
         .meta-caption {
             font-size: 0.68rem;
             font-weight: 400;
-            color: var(--ink-3);
-            margin-top: 0.2rem;
+            color: var(--ink-2);
+            margin-top: 0.25rem;
         }
-        .meta-actions {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            flex-shrink: 0;
-        }
+        .meta-actions { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
         .meta-btn {
-            background: var(--ink);
-            color: var(--paper);
+            background: var(--acc);
+            color: #0a0a0b;
             border: none;
             border-radius: 999px;
             padding: 0.55rem 1.1rem;
-            font-family: inherit;
-            font-size: 0.72rem;
-            font-weight: 600;
+            font-family: "Unbounded", sans-serif;
+            font-weight: 700;
+            font-size: 0.64rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
             text-decoration: none;
             cursor: pointer;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 8px 28px rgba(var(--acc-rgb), 0.35);
             transition: transform 180ms var(--ease), box-shadow 300ms var(--ease);
         }
         @media (hover: hover) and (pointer: fine) {
-            .meta-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+            .meta-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 40px rgba(var(--acc-rgb), 0.5); }
         }
         .meta-btn:active { transform: scale(0.97); }
 
@@ -2068,16 +1700,17 @@ PLAYER_PAGE_HTML = r"""
             bottom: 36px;
             left: 50%;
             transform: translate(-50%, 16px);
-            background: rgba(29,29,31,0.92);
+            background: rgba(20,20,22,0.94);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(var(--acc-rgb), 0.4);
             color: #fff;
             border-radius: 999px;
             padding: 0.6rem 1.2rem;
             font-family: inherit;
             font-size: 0.78rem;
             font-weight: 500;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
             opacity: 0;
             pointer-events: none;
             z-index: 100;
@@ -2087,9 +1720,9 @@ PLAYER_PAGE_HTML = r"""
 
         @media (max-width: 700px) {
             .app { padding: 0.7rem; gap: 0.9rem; }
-            .video-wrapper { width: 100%; border-radius: 20px; }
+            .video-wrapper { width: 100%; border-radius: 18px; }
             .header { padding: 0.7rem 0.8rem; }
-            .header-brand .word { font-size: 0.66rem; }
+            .header-brand .word { font-size: 0.6rem; }
             .header-status { display: none; }
             .controls-wrapper { padding: 0.8rem 0.8rem 0.7rem 0.8rem; }
             .controls-row button { font-size: 0.6rem; min-height: 30px; }
@@ -2100,7 +1733,7 @@ PLAYER_PAGE_HTML = r"""
             .vol-slider { width: 56px; }
             .controls-row .time-display { font-size: 0.56rem; min-width: 66px; }
             .center-play { width: 56px; height: 56px; }
-            .center-play svg { width: 24px; height: 24px; }
+            .center-play svg { width: 22px; height: 22px; }
             .meta { width: 100%; flex-direction: column; align-items: flex-start; gap: 0.6rem; }
             .meta-title { max-width: 100%; }
             .meta-actions { width: 100%; }
@@ -2140,7 +1773,7 @@ PLAYER_PAGE_HTML = r"""
         </video>
         <div class="header" id="header">
             <div class="header-brand">
-                <span class="word">The House<span class="dot">.</span></span>
+                <span class="word">FAP<span class="dot">HOUSE</span></span>
                 <span class="header-badge">18+</span>
             </div>
             <div class="header-right">
@@ -2188,11 +1821,11 @@ PLAYER_PAGE_HTML = r"""
 
     <div class="meta">
         <div style="min-width:0;">
-            <div class="meta-title" id="videoTitle">Faphouse Video</div>
+            <div class="meta-title" id="videoTitle"><span class="a">FAP</span>HOUSE VIDEO</div>
             <div class="meta-caption">Saved to your library automatically on playback</div>
         </div>
         <div class="meta-actions">
-            <a href="/" class="meta-btn">← Back to hub</a>
+            <a href="/" class="meta-btn">← Back</a>
         </div>
     </div>
 </div>
