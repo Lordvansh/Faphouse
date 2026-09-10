@@ -333,7 +333,7 @@ class FaphouseClient:
         parsed_base = urlparse(base_url)
         base_origin = f"{parsed_base.scheme}://{parsed_base.netloc}"
         result = []
-        for line in lines:
+        for i, line in enumerate(lines):
             stripped = line.strip()
             if not stripped or stripped.startswith('#'):
                 if stripped.startswith('#EXT-X-MAP') and 'URI=' in stripped:
@@ -346,6 +346,14 @@ class FaphouseClient:
                         else:
                             proxy_uri = f"/proxy/media?url={quote(abs_uri, safe='')}"
                         stripped = stripped[:uri_match.start(1)] + proxy_uri + stripped[uri_match.end(1):]
+                if stripped.startswith('#EXT-X-STREAM-INF'):
+                    next_url = ''
+                    for j in range(i + 1, len(lines)):
+                        if lines[j].strip() and not lines[j].strip().startswith('#'):
+                            next_url = lines[j].strip()
+                            break
+                    if next_url and ('.av1.' in next_url or 'av01' in next_url):
+                        stripped = re.sub(r'avc1[^\s,"]+', 'av01.0.08M.08', stripped)
                 result.append(stripped)
             else:
                 abs_url = self._resolve_url(stripped, base_url, base_origin)
