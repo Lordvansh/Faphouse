@@ -352,7 +352,9 @@ class FaphouseClient:
                         if lines[j].strip() and not lines[j].strip().startswith('#'):
                             next_url = lines[j].strip()
                             break
-                    if next_url and ('.av1.' in next_url or 'av01' in next_url):
+                    is_av1 = (('.av1.' in next_url or 'av01' in next_url) or
+                              ('.av1.' in base_url or 'av01' in base_url))
+                    if is_av1:
                         stripped = re.sub(r'avc1[^\s,"]+', 'av01.0.08M.08', stripped)
                 result.append(stripped)
             else:
