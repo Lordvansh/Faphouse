@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 BASE_URL = "https://faphouse2.com"
 EMAIL = os.environ.get('EMAIL', 'rockstarga69@gmail.com')
-PASSWORD = os.environ.get('PASSWORD', 'Jaiisbeast@1')
+PASSWORD = os.environ.get('PASSWORD', 'Jaiisbeast@0')
 CACHE_DURATION = 300
 
 class FaphouseClient:
