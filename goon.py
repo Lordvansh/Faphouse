@@ -1,9 +1,8 @@
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, jsonify, request, render_template_string, Response, stream_with_context
 import requests
 import re
 import json
 import os
-from functools import lru_cache
 from datetime import datetime, timedelta
 import time
 import logging
@@ -11,6 +10,7 @@ import zlib
 import gzip
 from io import BytesIO
 import urllib.parse
+from urllib.parse import urljoin, urlparse, quote, unquote
 
 app = Flask(__name__)
 
@@ -18,8 +18,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://faphouse2.com"
-EMAIL = os.environ.get('EMAIL', 'rockstarga69@gmail.com')
-PASSWORD = os.environ.get('PASSWORD', 'Jaiisbeast@1')
+EMAIL = os.environ.get('EMAIL', 'rockstarga69@gmail.com') #add email
+PASSWORD = os.environ.get('PASSWORD', 'SajagOG@1234') #add pass
 CACHE_DURATION = 300
 
 class FaphouseClient:
@@ -27,6 +27,22 @@ class FaphouseClient:
         self.session = None
         self.logged_in = False
         self.session_created = False
+        self._m3u8_cache = {}
+        self._m3u8_cache_max = 100
+
+    def _cache_get(self, key):
+        if key in self._m3u8_cache:
+            entry = self._m3u8_cache[key]
+            if (datetime.now() - entry['ts']).seconds < CACHE_DURATION:
+                return entry['url']
+            del self._m3u8_cache[key]
+        return None
+
+    def _cache_set(self, key, url):
+        if len(self._m3u8_cache) >= self._m3u8_cache_max:
+            oldest = min(self._m3u8_cache, key=lambda k: self._m3u8_cache[k]['ts'])
+            del self._m3u8_cache[oldest]
+        self._m3u8_cache[key] = {'url': url, 'ts': datetime.now()}
         
     def ensure_session(self):
         if not self.session or not self.logged_in:
@@ -146,12 +162,16 @@ class FaphouseClient:
             logger.error(f"Decoding error: {str(e)}")
             return response.text if response.text else str(response.content)
     
-    @lru_cache(maxsize=100)
     def get_m3u8_url(self, video_url):
         logger.info(f"Processing video URL: {video_url[:80]}...")
         
         if '#' in video_url:
             video_url = video_url.split('#')[0]
+        
+        cached = self._cache_get(video_url)
+        if cached:
+            logger.info("Returning cached M3U8 URL")
+            return cached
         
         session = self.ensure_session()
         if session:
@@ -178,6 +198,7 @@ class FaphouseClient:
                         m3u8 = self._extract_m3u8(html)
                         if m3u8:
                             logger.info("Found M3U8 URL with session!")
+                            self._cache_set(video_url, m3u8)
                             return m3u8
             except Exception as e:
                 logger.warning(f"Session attempt failed: {str(e)}")
@@ -205,6 +226,7 @@ class FaphouseClient:
                     m3u8 = self._extract_m3u8(html)
                     if m3u8:
                         logger.info("Found M3U8 URL with guest!")
+                        self._cache_set(video_url, m3u8)
                         return m3u8
         except Exception as e:
             logger.warning(f"Guest attempt failed: {str(e)}")
@@ -265,6 +287,130 @@ class FaphouseClient:
             return unique_urls[0]
         
         return None
+
+    def fetch_m3u8_proxied(self, m3u8_url):
+        self.ensure_session()
+        try:
+            resp = self.session.get(m3u8_url, timeout=15, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate, br',
+            })
+            if resp.status_code != 200:
+                return None
+            content_encoding = resp.headers.get('Content-Encoding', '')
+            body = None
+            if 'gzip' in content_encoding:
+                try:
+                    body = gzip.decompress(resp.content).decode('utf-8', errors='ignore')
+                except Exception:
+                    body = None
+            if body is None and 'br' in content_encoding:
+                try:
+                    import brotli
+                    body = brotli.decompress(resp.content).decode('utf-8', errors='ignore')
+                except ImportError:
+                    body = None
+                except Exception:
+                    body = None
+            if body is None and 'deflate' in content_encoding:
+                try:
+                    body = zlib.decompress(resp.content).decode('utf-8', errors='ignore')
+                except Exception:
+                    try:
+                        body = zlib.decompress(resp.content, -zlib.MAX_WBITS).decode('utf-8', errors='ignore')
+                    except Exception:
+                        body = None
+            if body is None:
+                body = resp.text
+            return self._rewrite_m3u8(body, m3u8_url)
+        except Exception as e:
+            logger.error(f"Proxy fetch error: {e}")
+            return None
+
+    def _rewrite_m3u8(self, content, base_url):
+        lines = content.split('\n')
+        parsed_base = urlparse(base_url)
+        base_origin = f"{parsed_base.scheme}://{parsed_base.netloc}"
+        result = []
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#'):
+                if stripped.startswith('#EXT-X-MAP') and 'URI=' in stripped:
+                    uri_match = re.search(r'URI="([^"]+)"', stripped)
+                    if uri_match:
+                        orig_uri = uri_match.group(1)
+                        abs_uri = self._resolve_url(orig_uri, base_url, base_origin)
+                        if abs_uri.endswith('.m3u8'):
+                            proxy_uri = f"/proxy/m3u8?url={quote(abs_uri, safe='')}"
+                        else:
+                            proxy_uri = f"/proxy/media?url={quote(abs_uri, safe='')}"
+                        stripped = stripped[:uri_match.start(1)] + proxy_uri + stripped[uri_match.end(1):]
+                if stripped.startswith('#EXT-X-STREAM-INF'):
+                    next_url = ''
+                    for j in range(i + 1, len(lines)):
+                        if lines[j].strip() and not lines[j].strip().startswith('#'):
+                            next_url = lines[j].strip()
+                            break
+                    is_av1 = (('.av1.' in next_url or 'av01' in next_url) or
+                              ('.av1.' in base_url or 'av01' in base_url))
+                    if is_av1:
+                        stripped = re.sub(r'avc1[^\s,"]+', 'av01.0.08M.08', stripped)
+                result.append(stripped)
+            else:
+                abs_url = self._resolve_url(stripped, base_url, base_origin)
+                if abs_url.endswith('.m3u8'):
+                    result.append(f"/proxy/m3u8?url={quote(abs_url, safe='')}")
+                else:
+                    result.append(f"/proxy/media?url={quote(abs_url, safe='')}")
+        return '\n'.join(result)
+
+    def _resolve_url(self, url, base_url, base_origin):
+        if url.startswith('http://') or url.startswith('https://'):
+            return url
+        if url.startswith('//'):
+            return 'https:' + url
+        if url.startswith('/'):
+            return base_origin + url
+        return urljoin(base_url, url)
+
+    def fetch_media_proxied(self, media_url, range_header=None):
+        self.ensure_session()
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Encoding': 'identity',
+                'Referer': 'https://faphouse2.com/',
+            }
+            if range_header:
+                headers['Range'] = range_header
+            resp = self.session.get(media_url, headers=headers, timeout=30, stream=True)
+            if resp.status_code not in (200, 206):
+                return Response(status=resp.status_code)
+            resp_headers = {
+                'Content-Type': resp.headers.get('Content-Type', 'application/octet-stream'),
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Headers': 'Range',
+                'Access-Control-Expose-Headers': 'Content-Range, Content-Length, Content-Type',
+                'Cache-Control': 'public, max-age=3600',
+            }
+            if 'Content-Length' in resp.headers:
+                resp_headers['Content-Length'] = resp.headers['Content-Length']
+            if 'Content-Range' in resp.headers:
+                resp_headers['Content-Range'] = resp.headers['Content-Range']
+            if 'Accept-Ranges' in resp.headers:
+                resp_headers['Accept-Ranges'] = resp.headers['Accept-Ranges']
+            status = resp.status_code
+            return Response(
+                stream_with_context(resp.iter_content(chunk_size=65536)),
+                status=status,
+                headers=resp_headers
+            )
+        except Exception as e:
+            logger.error(f"Media proxy error: {e}")
+            return Response("Error fetching media", status=502)
 
 class TeraboxDownloader:
     def __init__(self):
@@ -2508,6 +2654,33 @@ ERROR_PAGE_HTML = """
 
 # ============= ROUTES =============
 
+@app.route('/proxy/m3u8')
+def proxy_m3u8():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"error": "Missing url parameter"}), 400
+    url = unquote(url)
+    try:
+        content = faphouse_client.fetch_m3u8_proxied(url)
+        if content:
+            return Response(content, content_type='application/vnd.apple.mpegurl', headers={
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'public, max-age=10'
+            })
+        return Response("Not found", status=404)
+    except Exception as e:
+        logger.error(f"Proxy m3u8 error: {e}")
+        return Response("Error", status=500)
+
+@app.route('/proxy/media')
+def proxy_media():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"error": "Missing url parameter"}), 400
+    url = unquote(url)
+    range_header = request.headers.get('Range')
+    return faphouse_client.fetch_media_proxied(url, range_header)
+
 @app.route('/')
 def index():
     return render_template_string(MAIN_PAGE_HTML, video_url=None)
@@ -2527,9 +2700,10 @@ def play_video():
         m3u8_url = faphouse_client.get_m3u8_url(video_url)
         
         if m3u8_url:
+            proxy_m3u8_url = f"/proxy/m3u8?url={quote(m3u8_url, safe='')}"
             return render_template_string(
                 PLAYER_PAGE_HTML,
-                m3u8_url=m3u8_url,
+                m3u8_url=proxy_m3u8_url,
                 platform="faphouse",
                 file_name="",
                 file_size=""
@@ -2599,9 +2773,11 @@ def get_m3u8():
         m3u8_url = faphouse_client.get_m3u8_url(video_url)
         
         if m3u8_url:
+            proxy_m3u8_url = f"/proxy/m3u8?url={quote(m3u8_url, safe='')}"
             return jsonify({
                 "success": True,
                 "m3u8_url": m3u8_url,
+                "proxy_m3u8_url": proxy_m3u8_url,
                 "video_url": video_url,
                 "platform": "faphouse"
             })
@@ -2646,7 +2822,7 @@ def status():
         "faphouse": {
             "logged_in": faphouse_client.logged_in,
             "session_created": faphouse_client.session_created,
-            "cache_info": faphouse_client.get_m3u8_url.cache_info()._asdict()
+            "cache_size": len(faphouse_client._m3u8_cache)
         },
         "terabox": {
             "cache_size": len(terabox_client.cache)
